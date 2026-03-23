@@ -96,13 +96,45 @@ class MainActivity : AppCompatActivity() {
             btn.text = receta
 
             btn.setOnClickListener {
-                val intent = Intent(this, RecipeActivity::class.java)
-                intent.putExtra("RECETA", receta)
-                startActivity(intent)
+
+                val faltantes = SmartCartManager.detectarFaltantes(
+                    receta,
+                    ingredientesDetectados
+                )
+
+                if (faltantes.isNotEmpty()) {
+
+                    val mensaje = "Te falta: ${faltantes.joinToString(", ")}\n\n¿Agregar al carrito?"
+
+                    AlertDialog.Builder(this)
+                        .setTitle("🛒 Faltantes detectados")
+                        .setMessage(mensaje)
+                        .setPositiveButton("Agregar") { _, _ ->
+
+                            CartMemory.agregarLista(this, faltantes)
+
+                            Toast.makeText(this, "Agregado al carrito", Toast.LENGTH_SHORT).show()
+
+                            startActivity(Intent(this, CartActivity::class.java))
+                        }
+                        .setNegativeButton("Continuar") { _, _ ->
+                            abrirReceta(receta)
+                        }
+                        .show()
+
+                } else {
+                    abrirReceta(receta)
+                }
             }
 
             chipContainer.addView(btn)
         }
+    }
+
+    private fun abrirReceta(receta: String) {
+        val intent = Intent(this, RecipeActivity::class.java)
+        intent.putExtra("RECETA", receta)
+        startActivity(intent)
     }
 
     // 🔥 SEMÁFORO DEMO (luego real con fechas)
