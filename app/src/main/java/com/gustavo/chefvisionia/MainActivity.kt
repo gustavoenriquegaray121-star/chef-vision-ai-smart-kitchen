@@ -1,10 +1,10 @@
 package com.gustavo.chefvisionia
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -18,10 +18,6 @@ class MainActivity : AppCompatActivity() {
 
     private val ingredientesDetectados = mutableListOf<String>()
 
-    companion object {
-        const val REQUEST_IMAGE = 100
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -30,22 +26,31 @@ class MainActivity : AppCompatActivity() {
         btnScan = findViewById(R.id.btnScanIngredients)
         btnCart = findViewById(R.id.btnGoToCart)
 
+        // 🔥 CARGAR MEMORIA
+        val guardados = MemoryManager.obtener(this)
+        if (guardados.isNotEmpty()) {
+            ingredientesDetectados.addAll(guardados)
+            mostrarOpciones()
+        }
+
         btnScan.setOnClickListener {
             if (puedeEscanear()) {
                 abrirCamara()
             } else {
-                Toast.makeText(this, "Límite alcanzado para tu plan", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Límite alcanzado", Toast.LENGTH_LONG).show()
             }
         }
 
         btnCart.setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
         }
+
+        // 🔥 SEMÁFORO (demo simple)
+        evaluarFrescuraDemo()
     }
 
-    // 🔒 CONTROL DE PLANES
     private fun puedeEscanear(): Boolean {
-        val limite = when (userPlan) {
+        val limite = when(userPlan) {
             "GRATUITO" -> 3
             "PREMIUM" -> 20
             else -> 99999
@@ -54,73 +59,66 @@ class MainActivity : AppCompatActivity() {
         return if (scanCount < limite) {
             scanCount++
             true
-        } else {
-            false
-        }
+        } else false
     }
 
-    // 📸 ABRIR CÁMARA
     private fun abrirCamara() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        try {
-            startActivityForResult(intent, REQUEST_IMAGE)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error al abrir cámara", Toast.LENGTH_SHORT).show()
-        }
+        startActivityForResult(intent, 100)
     }
 
-    // 📸 RESULTADO DE CÁMARA
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK) {
+        if (requestCode == 100 && resultCode == RESULT_OK) {
             procesarImagen()
         }
     }
 
-    // 🧠 PROCESAMIENTO (AQUÍ VA IA DESPUÉS)
+    // 🔥 SIMULACIÓN (luego IA real)
     private fun procesarImagen() {
-
-        // 🔥 MOCK INTELIGENTE (temporal)
         ingredientesDetectados.clear()
         ingredientesDetectados.addAll(listOf("huevo", "tocino", "cebolla"))
 
-        // 💾 GUARDAR MEMORIA LOCAL
+        // 🔥 GUARDAR MEMORIA
         MemoryManager.guardar(this, ingredientesDetectados)
 
-        // 🎯 GENERAR OPCIONES
         mostrarOpciones()
     }
 
-    // 🍳 GENERAR BOTONES DINÁMICOS (CLAVE DE TU APP)
     private fun mostrarOpciones() {
-
         chipContainer.removeAllViews()
 
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
 
-        if (opciones.isEmpty()) {
-            Toast.makeText(this, "No se encontraron recetas", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         opciones.forEach { receta ->
-
             val btn = Button(this)
             btn.text = receta
 
             btn.setOnClickListener {
-                abrirReceta(receta)
+                val intent = Intent(this, RecipeActivity::class.java)
+                intent.putExtra("RECETA", receta)
+                startActivity(intent)
             }
 
             chipContainer.addView(btn)
         }
     }
 
-    // 🚀 SALTO AUTOMÁTICO A PANTALLA 2
-    private fun abrirReceta(nombreReceta: String) {
-        val intent = Intent(this, RecipeActivity::class.java)
-        intent.putExtra("RECETA", nombreReceta)
-        startActivity(intent)
+    // 🔥 SEMÁFORO DEMO (luego real con fechas)
+    private fun evaluarFrescuraDemo() {
+
+        val mensaje = StringBuilder()
+
+        mensaje.append("🔴 Usa hoy: Espinacas\n")
+        mensaje.append("🟡 Pronto: Tomate\n")
+        mensaje.append("🟢 Fresco: Cebolla\n\n")
+        mensaje.append("💡 Tip: Martes de frutas en Soriana 🛒")
+
+        AlertDialog.Builder(this)
+            .setTitle("Estado de tu despensa")
+            .setMessage(mensaje.toString())
+            .setPositiveButton("OK", null)
+            .show()
     }
 }
