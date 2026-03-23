@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- LISTA -->
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp" />
+
+    <!-- BOTÓN AGREGAR -->
+    <Button
+        android:id="@+id/btnAdd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Agregar producto"
+        android:layout_marginTop="10dp"/>
+
+    <!-- BOTÓN WHATSAPP -->
+    <Button
+        android:id="@+id/btnWhats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Compartir por WhatsApp"
+        android:layout_marginTop="10dp"/>
+
+    <!-- BOTÓN REGRESAR -->
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Regresar"
+        android:layout_marginTop="20dp"/>
+
+</LinearLayout>
