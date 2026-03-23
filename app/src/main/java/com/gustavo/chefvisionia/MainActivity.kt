@@ -1,0 +1,94 @@
+package com.gustavo.chefvisionia
+
+import android.content.Intent
+import android.os.Bundle
+import android.provider.MediaStore
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+
+    private var scanCount = 0
+    private var userPlan = "GRATUITO"
+
+    private lateinit var chipContainer: LinearLayout
+    private lateinit var btnScan: Button
+    private lateinit var btnCart: ImageButton
+
+    private val ingredientesDetectados = mutableListOf<String>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        chipContainer = findViewById(R.id.chipContainer)
+        btnScan = findViewById(R.id.btnScanIngredients)
+        btnCart = findViewById(R.id.btnGoToCart)
+
+        btnScan.setOnClickListener {
+            if (puedeEscanear()) {
+                abrirCamara()
+            } else {
+                Toast.makeText(this, "Límite alcanzado", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        btnCart.setOnClickListener {
+            startActivity(Intent(this, CartActivity::class.java))
+        }
+    }
+
+    private fun puedeEscanear(): Boolean {
+        val limite = when(userPlan) {
+            "GRATUITO" -> 3
+            "PREMIUM" -> 20
+            else -> 99999
+        }
+
+        return if (scanCount < limite) {
+            scanCount++
+            true
+        } else false
+    }
+
+    private fun abrirCamara() {
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        startActivityForResult(intent, 100)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 100 && resultCode == RESULT_OK) {
+            procesarImagen()
+        }
+    }
+
+    // 🔥 Aquí luego va la IA real
+    private fun procesarImagen() {
+        ingredientesDetectados.clear()
+        ingredientesDetectados.addAll(listOf("huevo", "tocino", "cebolla"))
+
+        MemoryManager.guardar(this, ingredientesDetectados)
+        mostrarOpciones()
+    }
+
+    private fun mostrarOpciones() {
+        chipContainer.removeAllViews()
+
+        val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
+
+        opciones.forEach { receta ->
+            val btn = Button(this)
+            btn.text = receta
+
+            btn.setOnClickListener {
+                val intent = Intent(this, RecipeActivity::class.java)
+                intent.putExtra("RECETA", receta)
+                startActivity(intent)
+            }
+
+            chipContainer.addView(btn)
+        }
+    }
+}
