@@ -7,20 +7,32 @@ object RecipeEngine {
         val opciones = mutableListOf<String>()
 
         if (ingredientes.contains("huevo")) {
-            opciones.add("Omelette con tocino 🥓")
-            opciones.add("Huevos a la mexicana 🇲🇽")
+            if (ingredientes.contains("tocino")) {
+                opciones.add("Omelette con tocino")
+                opciones.add("Huevos con tocino")
+            }
+
+            if (ingredientes.contains("cebolla") && ingredientes.contains("tomate")) {
+                opciones.add("Huevos a la mexicana")
+            }
+
+            opciones.add("Huevo estrellado")
         }
 
-        if (ingredientes.contains("tocino")) {
-            opciones.add("Tacos de tocino 🌮")
+        if (ingredientes.contains("papa")) {
+            opciones.add("Papas fritas")
+            if (ingredientes.contains("huevo")) {
+                opciones.add("Papas con huevo")
+            }
         }
 
-        if (ingredientes.contains("cebolla")) {
-            opciones.add("Cebolla caramelizada 🧅")
+        if (ingredientes.contains("chorizo")) {
+            opciones.add("Huevo con chorizo")
         }
 
-        if (ingredientes.contains("huevo") && ingredientes.contains("cebolla")) {
-            opciones.add("Huevos con cebolla 🍳")
+        if (opciones.isEmpty()) {
+            opciones.add("Ensalada básica")
+            opciones.add("Sándwich sencillo")
         }
 
         return opciones
