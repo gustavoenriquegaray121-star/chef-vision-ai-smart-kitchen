@@ -1,5 +1,6 @@
 package com.gustavo.chefvisionia
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.provider.MediaStore
@@ -17,6 +18,10 @@ class MainActivity : AppCompatActivity() {
 
     private val ingredientesDetectados = mutableListOf<String>()
 
+    companion object {
+        const val REQUEST_IMAGE = 100
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -29,7 +34,7 @@ class MainActivity : AppCompatActivity() {
             if (puedeEscanear()) {
                 abrirCamara()
             } else {
-                Toast.makeText(this, "Límite alcanzado", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Límite alcanzado para tu plan", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -38,8 +43,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 🔒 CONTROL DE PLANES
     private fun puedeEscanear(): Boolean {
-        val limite = when(userPlan) {
+        val limite = when (userPlan) {
             "GRATUITO" -> 3
             "PREMIUM" -> 20
             else -> 99999
@@ -48,47 +54,73 @@ class MainActivity : AppCompatActivity() {
         return if (scanCount < limite) {
             scanCount++
             true
-        } else false
+        } else {
+            false
+        }
     }
 
+    // 📸 ABRIR CÁMARA
     private fun abrirCamara() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        startActivityForResult(intent, 100)
+        try {
+            startActivityForResult(intent, REQUEST_IMAGE)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al abrir cámara", Toast.LENGTH_SHORT).show()
+        }
     }
 
+    // 📸 RESULTADO DE CÁMARA
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == 100 && resultCode == RESULT_OK) {
+        if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK) {
             procesarImagen()
         }
     }
 
-    // 🔥 Aquí luego va la IA real
+    // 🧠 PROCESAMIENTO (AQUÍ VA IA DESPUÉS)
     private fun procesarImagen() {
+
+        // 🔥 MOCK INTELIGENTE (temporal)
         ingredientesDetectados.clear()
         ingredientesDetectados.addAll(listOf("huevo", "tocino", "cebolla"))
 
+        // 💾 GUARDAR MEMORIA LOCAL
         MemoryManager.guardar(this, ingredientesDetectados)
+
+        // 🎯 GENERAR OPCIONES
         mostrarOpciones()
     }
 
+    // 🍳 GENERAR BOTONES DINÁMICOS (CLAVE DE TU APP)
     private fun mostrarOpciones() {
+
         chipContainer.removeAllViews()
 
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
 
+        if (opciones.isEmpty()) {
+            Toast.makeText(this, "No se encontraron recetas", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         opciones.forEach { receta ->
+
             val btn = Button(this)
             btn.text = receta
 
             btn.setOnClickListener {
-                val intent = Intent(this, RecipeActivity::class.java)
-                intent.putExtra("RECETA", receta)
-                startActivity(intent)
+                abrirReceta(receta)
             }
 
             chipContainer.addView(btn)
         }
+    }
+
+    // 🚀 SALTO AUTOMÁTICO A PANTALLA 2
+    private fun abrirReceta(nombreReceta: String) {
+        val intent = Intent(this, RecipeActivity::class.java)
+        intent.putExtra("RECETA", nombreReceta)
+        startActivity(intent)
     }
 }
