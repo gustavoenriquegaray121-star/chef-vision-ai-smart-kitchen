@@ -3,6 +3,7 @@ package com.gustavo.chefvisionia
 import android.content.Intent
 import android.os.Bundle
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class CartActivity : AppCompatActivity() {
@@ -31,7 +32,7 @@ class CartActivity : AppCompatActivity() {
         }
 
         btnBack.setOnClickListener {
-            finish() // SIEMPRE regresa a pantalla 1
+            finish() // Regresa a pantalla 1
         }
     }
 
@@ -42,10 +43,12 @@ class CartActivity : AppCompatActivity() {
             .setTitle("Agregar producto")
             .setView(input)
             .setPositiveButton("Agregar") { _, _ ->
-                val texto = input.text.toString()
+                val texto = input.text.toString().trim()
                 if (texto.isNotEmpty()) {
                     lista.add(texto)
                     adapter.notifyDataSetChanged()
+                } else {
+                    Toast.makeText(this, "Escribe un producto", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancelar", null)
@@ -53,6 +56,11 @@ class CartActivity : AppCompatActivity() {
     }
 
     private fun compartirWhatsApp() {
+        if (lista.isEmpty()) {
+            Toast.makeText(this, "La lista está vacía", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val texto = lista.joinToString("\n")
 
         val intent = Intent(Intent.ACTION_SEND)
