@@ -1,6 +1,7 @@
 package com.gustavo.chefvisionia
 
 import android.content.Intent
+import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -30,6 +31,10 @@ class MainActivity : AppCompatActivity() {
         btnCart = findViewById(R.id.btnGoToCart)
         txtPlan = findViewById(R.id.txtPlan)
 
+        // 🔥 CARGAR SCAN COUNT
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        scanCount = prefs.getInt("scan_count", 0)
+
         actualizarUIPlan()
 
         // 🔥 CARGAR MEMORIA
@@ -52,7 +57,6 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, CartActivity::class.java))
         }
 
-        // 🔥 SEMÁFORO (demo)
         evaluarFrescuraDemo()
     }
 
@@ -74,6 +78,11 @@ class MainActivity : AppCompatActivity() {
 
         return if (scanCount < limite) {
             scanCount++
+
+            // 🔥 GUARDAR SCAN COUNT
+            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putInt("scan_count", scanCount).apply()
+
             true
         } else false
     }
@@ -91,7 +100,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 🔥 SIMULACIÓN (luego IA real)
     private fun procesarImagen() {
         ingredientesDetectados.clear()
         ingredientesDetectados.addAll(listOf("huevo", "tocino", "cebolla"))
@@ -189,7 +197,6 @@ class MainActivity : AppCompatActivity() {
         ).show()
     }
 
-    // 🔥 SEMÁFORO DEMO
     private fun evaluarFrescuraDemo() {
 
         val mensaje = StringBuilder()
