@@ -10,6 +10,7 @@ class CartActivity : AppCompatActivity() {
 
     private lateinit var lista: MutableList<String>
     private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var txtTotal: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,11 +21,15 @@ class CartActivity : AppCompatActivity() {
         val btnWhats = findViewById<Button>(R.id.btnWhats)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
-        // 🔥 CARGAR DESDE MEMORIA
+        txtTotal = findViewById(R.id.txtTotal)
+
+        // 🔥 CARGAR MEMORIA
         lista = CartMemory.obtenerLista(this)
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista)
         listView.adapter = adapter
+
+        actualizarTotal()
 
         btnAdd.setOnClickListener {
             mostrarDialogoAgregar()
@@ -52,11 +57,12 @@ class CartActivity : AppCompatActivity() {
                 if (texto.isNotEmpty()) {
 
                     lista.add(texto)
-
-                    // 🔥 GUARDAR TAMBIÉN EN MEMORIA
                     CartMemory.agregarLista(this, listOf(texto))
 
                     adapter.notifyDataSetChanged()
+
+                    // 🔥 ACTUALIZA TOTAL
+                    actualizarTotal()
 
                 } else {
                     Toast.makeText(this, "Escribe un producto", Toast.LENGTH_SHORT).show()
@@ -64,6 +70,12 @@ class CartActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun actualizarTotal() {
+        val precioPorItem = 25
+        val total = lista.size * precioPorItem
+        txtTotal.text = "Total estimado: $$total MXN"
     }
 
     private fun compartirWhatsApp() {
