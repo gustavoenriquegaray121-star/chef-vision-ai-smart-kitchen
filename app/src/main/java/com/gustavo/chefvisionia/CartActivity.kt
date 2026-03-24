@@ -20,10 +20,10 @@ class CartActivity : AppCompatActivity() {
         val btnAdd = findViewById<Button>(R.id.btnAdd)
         val btnWhats = findViewById<Button>(R.id.btnWhats)
         val btnBack = findViewById<Button>(R.id.btnBack)
+        val btnClear = findViewById<Button>(R.id.btnClear)
 
         txtTotal = findViewById(R.id.txtTotal)
 
-        // 🔥 CARGAR MEMORIA
         lista = CartMemory.obtenerLista(this)
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista)
@@ -41,6 +41,26 @@ class CartActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener {
             finish()
+        }
+
+        // 🔥 BOTÓN VACIAR
+        btnClear.setOnClickListener {
+
+            AlertDialog.Builder(this)
+                .setTitle("Vaciar carrito")
+                .setMessage("¿Seguro que quieres eliminar todo?")
+                .setPositiveButton("Sí") { _, _ ->
+
+                    lista.clear()
+                    CartMemory.limpiar(this)
+
+                    adapter.notifyDataSetChanged()
+                    actualizarTotal()
+
+                    Toast.makeText(this, "Carrito vacío", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
         }
     }
 
@@ -60,8 +80,6 @@ class CartActivity : AppCompatActivity() {
                     CartMemory.agregarLista(this, listOf(texto))
 
                     adapter.notifyDataSetChanged()
-
-                    // 🔥 ACTUALIZA TOTAL
                     actualizarTotal()
 
                 } else {
