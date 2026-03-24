@@ -17,9 +17,16 @@ class RecipeActivity : AppCompatActivity() {
 
         val img = findViewById<ImageView>(R.id.imgFood)
         val txt = findViewById<TextView>(R.id.txtReceta)
+        val titulo = findViewById<TextView>(R.id.txtTitulo) // 🔥 NUEVO (no rompe nada)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
+        // 🔥 TÍTULO BONITO (extra UX)
+        titulo.text = nombre
+
+        // 🔥 IMAGEN
         cargarImagen(nombre, img)
+
+        // 🔥 RECETA
         txt.text = obtenerReceta(nombre)
 
         btnBack.setOnClickListener {
@@ -46,6 +53,7 @@ class RecipeActivity : AppCompatActivity() {
 
         Glide.with(this)
             .load(url)
+            .centerCrop() // 🔥 MEJORA VISUAL
             .into(imageView)
     }
 
@@ -66,7 +74,7 @@ class RecipeActivity : AppCompatActivity() {
                 1. Bate los huevos
                 2. Fríe el tocino
                 3. Sofríe la cebolla
-                4. Mezcla todo y cocina
+                4. Mezcla todo y cocina a fuego medio
                 """.trimIndent()
 
             "Huevos a la mexicana" ->
@@ -82,7 +90,8 @@ class RecipeActivity : AppCompatActivity() {
                 Preparación:
                 1. Sofríe tomate, cebolla y chile
                 2. Agrega los huevos
-                3. Mezcla y cocina
+                3. Mezcla constantemente
+                4. Cocina hasta que esté listo
                 """.trimIndent()
 
             "Papas con tocino" ->
@@ -97,11 +106,16 @@ class RecipeActivity : AppCompatActivity() {
                 Preparación:
                 1. Fríe el tocino
                 2. Agrega las papas
-                3. Cocina hasta dorar
+                3. Mezcla bien
+                4. Cocina hasta dorar
                 """.trimIndent()
 
             else ->
-                "Receta no disponible"
+                """
+                🍽️ Receta no disponible
+
+                Esta receta será generada por IA en próximas versiones.
+                """.trimIndent()
         }
     }
 }
