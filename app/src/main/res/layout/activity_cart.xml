@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 🔥 TOTAL -->
+    <!-- TOTAL -->
     <TextView
         android:id="@+id/txtTotal"
         android:layout_width="match_parent"
@@ -36,6 +36,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Compartir por WhatsApp"
+        android:layout_marginTop="10dp"/>
+
+    <!-- 🔥 BOTÓN VACIAR -->
+    <Button
+        android:id="@+id/btnClear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Vaciar carrito"
         android:layout_marginTop="10dp"/>
 
     <!-- BOTÓN REGRESAR -->
