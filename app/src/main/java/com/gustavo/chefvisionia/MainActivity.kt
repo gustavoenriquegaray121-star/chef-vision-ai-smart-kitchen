@@ -1,6 +1,8 @@
 package com.gustavo.chefvisionia
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.*
@@ -45,7 +47,6 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, CartActivity::class.java))
         }
 
-        // 🔥 SEMÁFORO (demo simple)
         evaluarFrescuraDemo()
     }
 
@@ -75,12 +76,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 🔥 SIMULACIÓN (luego IA real)
     private fun procesarImagen() {
         ingredientesDetectados.clear()
         ingredientesDetectados.addAll(listOf("huevo", "tocino", "cebolla"))
 
-        // 🔥 GUARDAR MEMORIA
         MemoryManager.guardar(this, ingredientesDetectados)
 
         mostrarOpciones()
@@ -92,10 +91,27 @@ class MainActivity : AppCompatActivity() {
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
 
         opciones.forEach { receta ->
-            val btn = Button(this)
-            btn.text = receta
 
-            btn.setOnClickListener {
+            val chip = TextView(this)
+            chip.text = receta
+            chip.setTextColor(Color.WHITE)
+            chip.textSize = 14f
+            chip.setPadding(40, 20, 40, 20)
+
+            val shape = GradientDrawable()
+            shape.cornerRadius = 60f
+            shape.setColor(Color.parseColor("#FF5722"))
+
+            chip.background = shape
+
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(16, 16, 16, 16)
+            chip.layoutParams = params
+
+            chip.setOnClickListener {
 
                 val faltantes = SmartCartManager.detectarFaltantes(
                     receta,
@@ -127,7 +143,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            chipContainer.addView(btn)
+            chipContainer.addView(chip)
         }
     }
 
@@ -137,7 +153,6 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    // 🔥 SEMÁFORO DEMO (luego real con fechas)
     private fun evaluarFrescuraDemo() {
 
         val mensaje = StringBuilder()
