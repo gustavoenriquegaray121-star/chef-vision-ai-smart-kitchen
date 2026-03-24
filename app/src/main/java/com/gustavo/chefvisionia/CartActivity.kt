@@ -24,6 +24,7 @@ class CartActivity : AppCompatActivity() {
 
         txtTotal = findViewById(R.id.txtTotal)
 
+        // 🔥 CARGAR MEMORIA REAL
         lista = CartMemory.obtenerLista(this)
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista)
@@ -70,7 +71,7 @@ class CartActivity : AppCompatActivity() {
 
                     lista.removeAt(position)
 
-                    // 🔥 ACTUALIZAR MEMORIA
+                    // 🔥 SINCRONIZAR MEMORIA COMPLETA
                     CartMemory.limpiar(this)
                     CartMemory.agregarLista(this, lista)
 
@@ -99,6 +100,8 @@ class CartActivity : AppCompatActivity() {
                 if (texto.isNotEmpty()) {
 
                     lista.add(texto)
+
+                    // 🔥 GUARDAR SOLO EL NUEVO ITEM
                     CartMemory.agregarLista(this, listOf(texto))
 
                     adapter.notifyDataSetChanged()
