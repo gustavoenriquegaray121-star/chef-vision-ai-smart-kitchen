@@ -24,13 +24,19 @@
         android:background="#FFF3E0"
         android:layout_marginTop="10dp"/>
 
-    <!-- OPCIONES -->
-    <LinearLayout
-        android:id="@+id/chipContainer"
+    <!-- 🔥 SCROLL PARA RECETAS -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="16dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp">
+
+        <LinearLayout
+            android:id="@+id/chipContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+    </ScrollView>
 
     <!-- BOTÓN CARRITO -->
     <ImageButton
@@ -38,5 +44,6 @@
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:src="@android:drawable/ic_menu_agenda"
-        android:layout_gravity="end"/>
+        android:layout_gravity="end"
+        android:background="@android:color/transparent"/>
 </LinearLayout>
