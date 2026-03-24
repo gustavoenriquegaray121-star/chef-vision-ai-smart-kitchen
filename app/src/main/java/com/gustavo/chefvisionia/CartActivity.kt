@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class CartActivity : AppCompatActivity() {
 
-    private val lista = mutableListOf<String>()
+    private lateinit var lista: MutableList<String>
     private lateinit var adapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,6 +19,9 @@ class CartActivity : AppCompatActivity() {
         val btnAdd = findViewById<Button>(R.id.btnAdd)
         val btnWhats = findViewById<Button>(R.id.btnWhats)
         val btnBack = findViewById<Button>(R.id.btnBack)
+
+        // 🔥 CARGAR DESDE MEMORIA
+        lista = CartMemory.obtenerLista(this)
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista)
         listView.adapter = adapter
@@ -32,7 +35,7 @@ class CartActivity : AppCompatActivity() {
         }
 
         btnBack.setOnClickListener {
-            finish() // Regresa a pantalla 1
+            finish()
         }
     }
 
@@ -43,10 +46,18 @@ class CartActivity : AppCompatActivity() {
             .setTitle("Agregar producto")
             .setView(input)
             .setPositiveButton("Agregar") { _, _ ->
+
                 val texto = input.text.toString().trim()
+
                 if (texto.isNotEmpty()) {
+
                     lista.add(texto)
+
+                    // 🔥 GUARDAR TAMBIÉN EN MEMORIA
+                    CartMemory.agregarLista(this, listOf(texto))
+
                     adapter.notifyDataSetChanged()
+
                 } else {
                     Toast.makeText(this, "Escribe un producto", Toast.LENGTH_SHORT).show()
                 }
@@ -56,6 +67,7 @@ class CartActivity : AppCompatActivity() {
     }
 
     private fun compartirWhatsApp() {
+
         if (lista.isEmpty()) {
             Toast.makeText(this, "La lista está vacía", Toast.LENGTH_SHORT).show()
             return
