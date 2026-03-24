@@ -6,12 +6,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- 🔥 CONTADOR PLAN -->
+    <TextView
+        android:id="@+id/txtPlan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Plan: Gratuito | Escaneos: 0/3"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:background="#E3F2FD"/>
+
     <!-- BOTÓN ESCANEAR -->
     <Button
         android:id="@+id/btnScanIngredients"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Escanear ingredientes"/>
+        android:text="Escanear ingredientes"
+        android:layout_marginTop="10dp"/>
 
     <!-- 🔥 TIP INTELIGENTE -->
     <TextView
