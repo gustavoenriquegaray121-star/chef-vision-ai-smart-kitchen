@@ -2,7 +2,8 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <LinearLayout
         android:orientation="vertical"
@@ -10,23 +11,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- TÍTULO -->
+        <!-- 🔥 TÍTULO -->
         <TextView
             android:id="@+id/txtTitulo"
-            android:textSize="22sp"
-            android:textStyle="bold"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
 
-        <!-- IMAGEN -->
+        <!-- 🔥 IMAGEN -->
         <ImageView
             android:id="@+id/imgFood"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="220dp"
             android:scaleType="centerCrop"
             android:layout_marginTop="10dp"/>
 
-        <!-- RECETA -->
+        <!-- 🔥 RECETA -->
         <TextView
             android:id="@+id/txtReceta"
             android:layout_width="match_parent"
@@ -34,7 +35,7 @@
             android:textSize="16sp"
             android:layout_marginTop="16dp"/>
 
-        <!-- BOTÓN REGRESAR -->
+        <!-- 🔥 BOTÓN REGRESAR -->
         <Button
             android:id="@+id/btnBack"
             android:layout_width="match_parent"
