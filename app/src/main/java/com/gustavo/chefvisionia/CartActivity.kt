@@ -43,24 +43,46 @@ class CartActivity : AppCompatActivity() {
             finish()
         }
 
-        // 🔥 BOTÓN VACIAR
         btnClear.setOnClickListener {
-
             AlertDialog.Builder(this)
                 .setTitle("Vaciar carrito")
                 .setMessage("¿Seguro que quieres eliminar todo?")
                 .setPositiveButton("Sí") { _, _ ->
-
                     lista.clear()
                     CartMemory.limpiar(this)
-
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-
                     Toast.makeText(this, "Carrito vacío", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
+        }
+
+        // 🔥 ELIMINAR CON TOQUE LARGO
+        listView.setOnItemLongClickListener { _, _, position, _ ->
+
+            val item = lista[position]
+
+            AlertDialog.Builder(this)
+                .setTitle("Eliminar producto")
+                .setMessage("¿Eliminar \"$item\"?")
+                .setPositiveButton("Eliminar") { _, _ ->
+
+                    lista.removeAt(position)
+
+                    // 🔥 ACTUALIZAR MEMORIA
+                    CartMemory.limpiar(this)
+                    CartMemory.agregarLista(this, lista)
+
+                    adapter.notifyDataSetChanged()
+                    actualizarTotal()
+
+                    Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+
+            true
         }
     }
 
