@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chipContainer: LinearLayout
     private lateinit var btnScan: Button
     private lateinit var btnCart: ImageButton
+    private lateinit var txtPlan: TextView
 
     private val ingredientesDetectados = mutableListOf<String>()
 
@@ -27,6 +28,9 @@ class MainActivity : AppCompatActivity() {
         chipContainer = findViewById(R.id.chipContainer)
         btnScan = findViewById(R.id.btnScanIngredients)
         btnCart = findViewById(R.id.btnGoToCart)
+        txtPlan = findViewById(R.id.txtPlan)
+
+        actualizarUIPlan()
 
         // 🔥 CARGAR MEMORIA
         val guardados = MemoryManager.obtener(this)
@@ -37,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
         btnScan.setOnClickListener {
             if (puedeEscanear()) {
+                actualizarUIPlan()
                 abrirCamara()
             } else {
                 mostrarUpgrade()
@@ -49,6 +54,15 @@ class MainActivity : AppCompatActivity() {
 
         // 🔥 SEMÁFORO (demo)
         evaluarFrescuraDemo()
+    }
+
+    private fun actualizarUIPlan() {
+        val limite = when(userPlan) {
+            "GRATUITO" -> 3
+            "PREMIUM" -> 20
+            else -> 99999
+        }
+        txtPlan.text = "Plan: $userPlan | Escaneos: $scanCount/$limite"
     }
 
     private fun puedeEscanear(): Boolean {
