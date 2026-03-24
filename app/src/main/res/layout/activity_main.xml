@@ -6,14 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 🔥 CONTADOR PLAN -->
+    <!-- 🔥 PLAN / CONTADOR -->
     <TextView
         android:id="@+id/txtPlan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Plan: Gratuito | Escaneos: 0/3"
-        android:textSize="14sp"
+        android:text="Plan: GRATUITO | Escaneos: 0/3"
         android:textStyle="bold"
+        android:textSize="14sp"
         android:padding="8dp"
         android:background="#E3F2FD"/>
 
