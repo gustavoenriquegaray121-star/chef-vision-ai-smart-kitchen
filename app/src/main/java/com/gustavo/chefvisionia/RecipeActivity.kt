@@ -17,10 +17,10 @@ class RecipeActivity : AppCompatActivity() {
 
         val img = findViewById<ImageView>(R.id.imgFood)
         val txt = findViewById<TextView>(R.id.txtReceta)
-        val titulo = findViewById<TextView>(R.id.txtTitulo) // 🔥 NUEVO (no rompe nada)
+        val titulo = findViewById<TextView>(R.id.txtTitulo)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
-        // 🔥 TÍTULO BONITO (extra UX)
+        // 🔥 TÍTULO
         titulo.text = nombre
 
         // 🔥 IMAGEN
@@ -29,8 +29,9 @@ class RecipeActivity : AppCompatActivity() {
         // 🔥 RECETA
         txt.text = obtenerReceta(nombre)
 
+        // 🔙 REGRESAR
         btnBack.setOnClickListener {
-            finish() // SIEMPRE regresa a pantalla 1
+            finish()
         }
     }
 
@@ -53,7 +54,7 @@ class RecipeActivity : AppCompatActivity() {
 
         Glide.with(this)
             .load(url)
-            .centerCrop() // 🔥 MEJORA VISUAL
+            .centerCrop()
             .into(imageView)
     }
 
