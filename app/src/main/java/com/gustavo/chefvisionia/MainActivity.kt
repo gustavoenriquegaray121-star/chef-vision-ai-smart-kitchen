@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
             if (puedeEscanear()) {
                 abrirCamara()
             } else {
-                Toast.makeText(this, "Límite alcanzado", Toast.LENGTH_LONG).show()
+                mostrarUpgrade()
             }
         }
 
@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, CartActivity::class.java))
         }
 
+        // 🔥 SEMÁFORO (demo)
         evaluarFrescuraDemo()
     }
 
@@ -76,6 +77,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 🔥 SIMULACIÓN (luego IA real)
     private fun procesarImagen() {
         ingredientesDetectados.clear()
         ingredientesDetectados.addAll(listOf("huevo", "tocino", "cebolla"))
@@ -136,6 +138,9 @@ class MainActivity : AppCompatActivity() {
                         .setNegativeButton("Continuar") { _, _ ->
                             abrirReceta(receta)
                         }
+                        .setNeutralButton("Tip") { _, _ ->
+                            mostrarTip()
+                        }
                         .show()
 
                 } else {
@@ -153,6 +158,24 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    private fun mostrarUpgrade() {
+        AlertDialog.Builder(this)
+            .setTitle("🚀 Mejora tu plan")
+            .setMessage("Has alcanzado el límite de escaneos.\n\nPásate a Premium para más recetas sin límites.")
+            .setPositiveButton("Ver planes", null)
+            .setNegativeButton("Después", null)
+            .show()
+    }
+
+    private fun mostrarTip() {
+        Toast.makeText(
+            this,
+            "💡 Tip: Martes y jueves hay ofertas en frutas y verduras 🛒",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    // 🔥 SEMÁFORO DEMO
     private fun evaluarFrescuraDemo() {
 
         val mensaje = StringBuilder()
@@ -160,7 +183,7 @@ class MainActivity : AppCompatActivity() {
         mensaje.append("🔴 Usa hoy: Espinacas\n")
         mensaje.append("🟡 Pronto: Tomate\n")
         mensaje.append("🟢 Fresco: Cebolla\n\n")
-        mensaje.append("💡 Tip: Martes de frutas en Soriana 🛒")
+        mensaje.append("💡 Tip: Aprovecha ofertas locales")
 
         AlertDialog.Builder(this)
             .setTitle("Estado de tu despensa")
