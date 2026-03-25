@@ -4,7 +4,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
+        // Esta es la versión maestra del plugin de Android
         classpath 'com.android.tools.build:gradle:8.2.2'
+        // Agregamos la versión maestra de Kotlin aquí también
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"
     }
 }
 
