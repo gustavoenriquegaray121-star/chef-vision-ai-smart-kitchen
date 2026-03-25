@@ -10,6 +10,11 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
+// 🔥 IMPORTS ADMOB
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
+
 class MainActivity : AppCompatActivity() {
 
     private var scanCount = 0
@@ -19,6 +24,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnScan: Button
     private lateinit var btnCart: ImageButton
     private lateinit var txtPlan: TextView
+
+    // 🔥 ADMOB
+    private lateinit var adView: AdView
 
     private val ingredientesDetectados = mutableListOf<String>()
 
@@ -30,6 +38,12 @@ class MainActivity : AppCompatActivity() {
         btnScan = findViewById(R.id.btnScanIngredients)
         btnCart = findViewById(R.id.btnGoToCart)
         txtPlan = findViewById(R.id.txtPlan)
+
+        // 🔥 INICIALIZAR ADMOB
+        MobileAds.initialize(this) {}
+        adView = findViewById(R.id.adView)
+        val adRequest = AdRequest.Builder().build()
+        adView.loadAd(adRequest)
 
         // 🔥 CARGAR SCAN COUNT
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
