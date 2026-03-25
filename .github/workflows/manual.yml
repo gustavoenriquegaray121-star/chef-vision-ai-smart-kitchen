@@ -1,6 +1,7 @@
 name: Build APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
 
@@ -18,11 +19,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Dar permisos a Gradle
-        run: chmod +x ./gradlew
+      - name: Instalar Gradle
+        run: sudo apt-get update && sudo apt-get install -y gradle
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
