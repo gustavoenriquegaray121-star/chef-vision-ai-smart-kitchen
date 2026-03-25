@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application") // SIN VERSIÓN AQUÍ
-    id("org.jetbrains.kotlin.android") // SIN VERSIÓN AQUÍ
+    id("com.android.application") 
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
