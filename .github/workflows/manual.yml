@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK (Modern)
 
 on:
   workflow_dispatch:
@@ -19,11 +19,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Instalar Gradle
-        run: sudo apt-get update && sudo apt-get install -y gradle
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Generar Gradle Wrapper
-        run: gradle wrapper
+      - name: Crear Gradle Wrapper moderno
+        run: |
+          gradle wrapper --gradle-version 8.5
 
       - name: Dar permisos
         run: chmod +x ./gradlew
