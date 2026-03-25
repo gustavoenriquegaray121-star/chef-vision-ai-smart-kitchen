@@ -1,8 +1,6 @@
 plugins {
-    // Subimos a 8.4.0 para que sea compatible con Gradle 9
-    id("com.android.application") version "8.4.0"
-    // Subimos Kotlin a 1.9.20 para evitar errores de estadísticas de build
-    id("org.jetbrains.kotlin.android") version "1.9.20"
+    id("com.android.application") // SIN VERSIÓN AQUÍ
+    id("org.jetbrains.kotlin.android") // SIN VERSIÓN AQUÍ
 }
 
 android {
@@ -43,17 +41,17 @@ android {
 }
 
 dependencies {
-    // LIBRERÍAS CORE (Indispensables para el arranque)
+    // LIBRERÍAS CORE
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
-    // GLIDE (Gestión de imágenes de Smart Kitchen)
+    // GLIDE
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-    // ADS (Monetización AdMob)
+    // ADS
     implementation("com.google.android.gms:play-services-ads:23.0.0")
 
     // PRUEBAS
