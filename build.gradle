@@ -4,10 +4,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Subimos a 8.4.0 que es más estable con Gradle 8.5/9.0+
-        classpath 'com.android.tools.build:gradle:8.4.0'
-        // Subimos Kotlin a 1.9.20 para evitar el error de "BuildFlowService"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20"
+        // Esta versión 8.5.0 es la medicina para el error HasConvention
+        classpath 'com.android.tools.build:gradle:8.5.0'
+        // Kotlin 1.9.22 para máxima estabilidad con Gradle 9
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
     }
 }
 
