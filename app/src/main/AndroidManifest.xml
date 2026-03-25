@@ -8,8 +8,8 @@
     <application
         android:allowBackup="true"
         android:label="Chef Vision IA"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher">
+        android:icon="@drawable/logo_cv"
+        android:roundIcon="@drawable/logo_cv">
 
         <!-- ADMOB (PRUEBA) -->
         <meta-data
