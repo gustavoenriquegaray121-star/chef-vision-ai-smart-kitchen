@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application") 
+    id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
@@ -15,6 +15,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // API Key segura desde GitHub Secrets
+        buildConfigField(
+            "String",
+            "GEMINI_API_KEY",
+            "\"${System.getenv("GEMINI_API_KEY") ?: ""}\""
+        )
     }
 
     buildTypes {
@@ -38,20 +45,27 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
-    // LIBRERÍAS CORE
+    // CORE
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
+    // LIFECYCLE para lifecycleScope
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+
     // GLIDE
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-    // ADS
+    // ADMOB
     implementation("com.google.android.gms:play-services-ads:23.0.0")
 
     // PRUEBAS
