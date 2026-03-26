@@ -22,18 +22,63 @@ jobs:
       - name: Configurar Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Crear Gradle Wrapper moderno
-        run: |
-          gradle wrapper --gradle-version 8.5
+      - name: Crear Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.5
 
       - name: Dar permisos
         run: chmod +x ./gradlew
 
-      - name: Build APK
-        run: ./gradlew assembleDebug
+      - name: Generar iconos
+        run: |
+          sudo apt-get install -y imagemagick
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+          if [ -f app/src/main/res/drawable/logo_cv.png ]; then
+            convert app/src/main/res/drawable/logo_cv.png -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
+            convert app/src/main/res/drawable/logo_cv.png -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
+            convert app/src/main/res/drawable/logo_cv.png -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            convert app/src/main/res/drawable/logo_cv.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            convert app/src/main/res/drawable/logo_cv.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            cp app/src/main/res/mipmap-mdpi/ic_launcher.png app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+            cp app/src/main/res/mipmap-hdpi/ic_launcher.png app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+            cp app/src/main/res/mipmap-xhdpi/ic_launcher.png app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+            cp app/src/main/res/mipmap-xxhdpi/ic_launcher.png app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+            cp app/src/main/res/mipmap-xxxhdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          fi
 
-      - name: Subir APK
+      - name: Build Release APK
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: ./gradlew assembleRelease
+
+      - name: Generar Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore chefvision.keystore \
+            -alias chefvision \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass 'ChefVision2026$' \
+            -keypass 'ChefVision2026$' \
+            -dname "CN=Gustavo Garay, OU=Altea-Garay, O=Altea-Garay, L=Garcia, S=NuevoLeon, C=MX"
+
+      - name: Firmar APK
+        run: |
+          APKSIGNER=$(find $ANDROID_HOME -name "apksigner" | head -1)
+          $APKSIGNER sign \
+            --ks chefvision.keystore \
+            --ks-pass pass:'ChefVision2026$' \
+            --key-pass pass:'ChefVision2026$' \
+            --ks-key-alias chefvision \
+            --out app/build/outputs/apk/release/ChefVisionIA-signed.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Subir APK firmado
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: ChefVisionIA-SmartKitchen
+          path: app/build/outputs/apk/release/ChefVisionIA-signed.apk
