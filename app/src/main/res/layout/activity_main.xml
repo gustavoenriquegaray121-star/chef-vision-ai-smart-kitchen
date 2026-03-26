@@ -3,69 +3,135 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:ads="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#0A0A0A">
 
-    <!-- 🔥 PLAN / CONTADOR -->
+    <!-- HEADER -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#111111"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Chef Vision IA"
+            android:textColor="#FF6D00"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:fontFamily="sans-serif-condensed"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Smart Kitchen System"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:gravity="center"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💎 v.25 Certified by Altea-Garay"
+            android:textColor="#FF6D00"
+            android:textSize="10sp"
+            android:gravity="center"
+            android:paddingBottom="4dp"/>
+
+    </LinearLayout>
+
+    <!-- PLAN BADGE -->
     <TextView
         android:id="@+id/txtPlan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Plan: GRATUITO | Escaneos: 0/3"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:textStyle="bold"
-        android:textSize="14sp"
+        android:gravity="center"
         android:padding="8dp"
-        android:background="#E3F2FD"/>
+        android:background="#1A1A1A"/>
+
+    <!-- TIP INTELIGENTE -->
+    <TextView
+        android:id="@+id/txtTip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="💡 ¿Qué hay en tu refri hoy?"
+        android:textColor="#CCCCCC"
+        android:textSize="13sp"
+        android:padding="12dp"
+        android:background="#FF6D0015"
+        android:gravity="center"/>
 
     <!-- BOTÓN ESCANEAR -->
     <Button
         android:id="@+id/btnScanIngredients"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Escanear ingredientes"
-        android:layout_marginTop="10dp"/>
+        android:layout_height="64dp"
+        android:layout_margin="16dp"
+        android:text="📸 IDENTIFICAR INGREDIENTES"
+        android:textColor="#000000"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:backgroundTint="#FF6D00"/>
 
-    <!-- 🔥 TIP INTELIGENTE -->
-    <TextView
-        android:id="@+id/txtTip"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="💡 Tip: Hoy hay ofertas en frutas y verduras"
-        android:textSize="14sp"
-        android:padding="10dp"
-        android:background="#FFF3E0"
-        android:layout_marginTop="10dp"/>
-
-    <!-- 🔥 SCROLL PARA RECETAS -->
+    <!-- SCROLL OPCIONES -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="16dp">
+        android:layout_marginHorizontal="16dp">
 
         <LinearLayout
             android:id="@+id/chipContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"/>
+            android:orientation="vertical"
+            android:paddingBottom="16dp"/>
+
     </ScrollView>
 
-    <!-- BOTÓN CARRITO -->
-    <ImageButton
-        android:id="@+id/btnGoToCart"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@android:drawable/ic_menu_agenda"
-        android:layout_gravity="end"
-        android:background="@android:color/transparent"/>
+    <!-- BOTTOM BAR -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#111111"
+        android:padding="8dp">
 
-    <!-- 🔥 ADMOB BANNER -->
+        <ImageButton
+            android:id="@+id/btnGoToCart"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:src="@android:drawable/ic_menu_agenda"
+            android:background="@android:color/transparent"
+            android:tint="#FF6D00"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="🛒 Mi Lista"
+            android:textColor="#888888"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:layout_gravity="center"/>
+
+    </LinearLayout>
+
+    <!-- ADMOB -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/adView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         ads:adSize="BANNER"
         ads:adUnitId="ca-app-pub-3940256099942544/6300978111"/>
-        
+
 </LinearLayout>
