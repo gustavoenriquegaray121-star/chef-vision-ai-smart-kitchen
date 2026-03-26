@@ -28,7 +28,7 @@ jobs:
       - name: Dar permisos
         run: chmod +x ./gradlew
 
-      - name: Generar iconos
+      - name: Generar iconos y limpiar drawable
         run: |
           sudo apt-get install -y imagemagick
           mkdir -p app/src/main/res/mipmap-mdpi
@@ -47,6 +47,7 @@ jobs:
             cp app/src/main/res/mipmap-xhdpi/ic_launcher.png app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
             cp app/src/main/res/mipmap-xxhdpi/ic_launcher.png app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
             cp app/src/main/res/mipmap-xxxhdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+            rm app/src/main/res/drawable/logo_cv.png
           fi
 
       - name: Build Release APK
