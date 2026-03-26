@@ -23,7 +23,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Crear Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.5
+        run: gradle wrapper --gradle-version 8.7
 
       - name: Dar permisos
         run: chmod +x ./gradlew
