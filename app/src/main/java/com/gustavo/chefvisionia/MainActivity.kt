@@ -64,8 +64,7 @@ class MainActivity : AppCompatActivity() {
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
 
         try {
-            MobileAds.initialize(this)
-            adView.loadAd(AdRequest.Builder().build())
+            MobileAds.initialize(this)            adView.loadAd(AdRequest.Builder().build())
         } catch (e: Exception) { e.printStackTrace() }
 
         EventMemoryManager.initFamilia(this)
@@ -167,9 +166,8 @@ class MainActivity : AppCompatActivity() {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
-                // Contexto familiar para Gemini
                 val eventoTexto = EventMemoryManager.buscarEventoCercano(this@MainActivity)
-                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el ${it.dia}/${it.mes}. Le gusta: ${it.gustos}." }
+                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el \( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}." }
                     ?: ""
 
                 val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
@@ -178,6 +176,13 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.clear()
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
+
+                    // ← Guardado de fecha para semáforo real
+                    val inventoryPrefs = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+                    val editor = inventoryPrefs.edit()
+                    ingredientes.forEach { editor.putLong(it.lowercase(), System.currentTimeMillis()) }
+                    editor.apply()
+
                     mostrarOpciones()
                 } else {
                     ingredientesDetectados.clear()
@@ -398,14 +403,15 @@ class MainActivity : AppCompatActivity() {
                 val fechaCarga = prefs.getLong(item, 0L)
                 if (fechaCarga != 0L) {
                     val diasPasados = TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)
-                    val limite = freshnessRules[item.lowercase()] ?: 7
+                    val limite = freshnessRules ?: 7
                     if (diasPasados >= limite) criticos.add(item)
                 }
             }
 
             return if (criticos.isNotEmpty()) {
                 val lista = criticos.joinToString(", ")
-                val sugerencia = sugerencias[criticos.first().lowercase()] ?: "¡Cocina algo rico antes de que se pierdan!"
+                val primera = criticos.first().lowercase()
+                val sugerencia = sugerencias ?: "¡Cocina algo rico antes de que se pierdan!"
                 "🔴 Urgente usar: $lista\n\n💡 Sugerencia: $sugerencia"
             } else ""
         }
