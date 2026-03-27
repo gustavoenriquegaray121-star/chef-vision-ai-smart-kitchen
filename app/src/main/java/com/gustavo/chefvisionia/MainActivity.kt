@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.Gravity
 import android.view.View
 import android.view.animation.AnimationUtils
@@ -33,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtEvento: TextView
     private lateinit var btnScan: Button
     private lateinit var adView: AdView
+    private lateinit var progressBar: ProgressBar  // ← Nuevo: loader al escanear
 
     // Camera moderna
     private val cameraLauncher = registerForActivityResult(
@@ -58,45 +60,33 @@ class MainActivity : AppCompatActivity() {
         txtEvento = findViewById(R.id.txtEvento)
         btnScan = findViewById(R.id.btnScanIngredients)
         adView = findViewById(R.id.adView)
+        progressBar = findViewById(R.id.progressBar)  // Asegúrate de agregar <ProgressBar id="@+id/progressBar" ... /> en layout
 
-        // API Key
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
 
-        // AdMob
         try {
-            MobileAds.initialize(this) {}
-            adView.loadAd(AdRequest.Builder().build())
+            MobileAds.initialize(this)            adView.loadAd(AdRequest.Builder().build())
         } catch (e: Exception) { e.printStackTrace() }
 
-        // Familia
         EventMemoryManager.initFamilia(this)
 
-        // Cargar estado
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         scanCount = prefs.getInt("scan_count", 0)
         actualizarUIPlan()
 
-        // Memoria ingredientes
         val guardados = MemoryManager.obtener(this)
         if (guardados.isNotEmpty()) {
             ingredientesDetectados.addAll(guardados)
             mostrarOpciones()
         }
 
-        // Tip por hora
         mostrarTipPorHora()
-
-        // Evento familiar cercano
         verificarEventoFamiliar()
-
-        // Semáforo de frescura al abrir
         evaluarFrescura()
 
-        // Animación pulsante
         val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
         btnScan.startAnimation(pulse)
 
-        // Truco desarrollador
         txtPlan.setOnLongClickListener {
             scanCount = 0
             prefs.edit().putInt("scan_count", 0).apply()
@@ -164,21 +154,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun abrirCamara() {
-        val intent = android.provider.MediaStore.ACTION_IMAGE_CAPTURE
-        cameraLauncher.launch(android.content.Intent(intent))
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        cameraLauncher.launch(intent)
     }
 
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
+        progressBar.visibility = View.VISIBLE  // ← Feedback visual
 
         lifecycleScope.launch {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
-                // Contexto familiar para Gemini
                 val eventoTexto = EventMemoryManager.buscarEventoCercano(this@MainActivity)
-                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el ${it.dia}/${it.mes}. Le gusta: ${it.gustos}." }
+                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el \( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}." }
                     ?: ""
 
                 val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
@@ -195,9 +185,10 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "⚠️ Modo offline activado", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "❌ Error: ${e.localizedMessage ?: "desconocido"}", Toast.LENGTH_SHORT).show()
             } finally {
                 btnScan.isEnabled = true
+                progressBar.visibility = View.GONE
                 mostrarTipPorHora()
                 actualizarUIPlan()
             }
@@ -240,6 +231,10 @@ class MainActivity : AppCompatActivity() {
                     setMargins(16, 12, 16, 12)
                     gravity = Gravity.CENTER_HORIZONTAL
                 }
+
+                // Animación suave al aparecer
+                alpha = 0f
+                animate().alpha(1f).setDuration(400).start()
             }
 
             chip.setOnClickListener {
@@ -248,10 +243,7 @@ class MainActivity : AppCompatActivity() {
                 if (faltantes.isNotEmpty()) {
                     lifecycleScope.launch {
                         try {
-                            val sustitucion = GeminiEngine.sugerirSustitucion(
-                                faltantes.first(),
-                                ingredientesDetectados
-                            )
+                            val sustitucion = GeminiEngine.sugerirSustitucion(faltantes.first(), ingredientesDetectados)
                             AlertDialog.Builder(this@MainActivity)
                                 .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
                                 .setMessage("$sustitucion\n\n¿Qué deseas hacer?")
@@ -328,23 +320,24 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("🚀 Desbloquea Chef Vision")
             .setMessage(
-                "Has agotado tus escaneos.\n\n" +
-                "⭐ PREMIUM \$699/año:\n" +
+                "Has agotado tus escaneos gratuitos.\n\n" +
+                "⭐ **PREMIUM** — \$699/año\n" +
                 "• 20 escaneos diarios\n" +
-                "• Todas las cocinas\n" +
-                "• Sin anuncios\n\n" +
-                "👑 PLAN EMBAJADOR \$899/año:\n" +
-                "• Ilimitado\n" +
-                "• Memoria familiar 💖\n" +
-                "• Recordatorios cumpleaños\n" +
-                "• Fitness, Vegano, Maridaje\n" +
-                "• Rappi/Uber integrado"
+                "• Todas las cocinas del mundo\n" +
+                "• Sin anuncios\n" +
+                "• Sugerencias personalizadas\n\n" +
+                "👑 **EMBAJADOR** — \$899/año\n" +
+                "• Escaneos ilimitados\n" +
+                "• Memoria familiar completa 💖\n" +
+                "• Recordatorios de cumpleaños\n" +
+                "• Planes Fitness, Vegano, Postres y Maridaje\n" +
+                "• Integración Rappi/Uber Eats"
             )
-            .setPositiveButton("👑 Embajador") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente", Toast.LENGTH_SHORT).show()
+            .setPositiveButton("👑 Quiero ser Embajador") { _, _ ->
+                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
             }
             .setNeutralButton("⭐ Premium") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Luego", null)
             .show()
@@ -368,6 +361,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // FreshnessManager intacto, solo lo dejé como object dentro (si quieres moverlo a archivo aparte, dime)
     object FreshnessManager {
         private val freshnessRules = mapOf(
             "espinaca" to 3, "lechuga" to 4, "tomate" to 5, "jitomate" to 5,
@@ -405,7 +399,7 @@ class MainActivity : AppCompatActivity() {
                 val fechaCarga = prefs.getLong(item, 0L)
                 if (fechaCarga != 0L) {
                     val diasPasados = TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)
-                    val limite = freshnessRules[item.lowercase()] ?: 7
+                    val limite = freshnessRules ?: 7
                     if (diasPasados >= limite) criticos.add(item)
                 }
             }
