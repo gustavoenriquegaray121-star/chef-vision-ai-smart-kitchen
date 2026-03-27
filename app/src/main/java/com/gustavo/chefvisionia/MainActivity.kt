@@ -64,7 +64,8 @@ class MainActivity : AppCompatActivity() {
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
 
         try {
-            MobileAds.initialize(this)            adView.loadAd(AdRequest.Builder().build())
+            MobileAds.initialize(this)
+            adView.loadAd(AdRequest.Builder().build())
         } catch (e: Exception) { e.printStackTrace() }
 
         EventMemoryManager.initFamilia(this)
@@ -167,7 +168,7 @@ class MainActivity : AppCompatActivity() {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
                 val eventoTexto = EventMemoryManager.buscarEventoCercano(this@MainActivity)
-                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el \( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}." }
+                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el ${it.dia}/${it.mes}. Le gusta: ${it.gustos}." }
                     ?: ""
 
                 val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
@@ -177,7 +178,6 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
 
-                    // ← Guardado de fecha para semáforo real
                     val inventoryPrefs = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
                     val editor = inventoryPrefs.edit()
                     ingredientes.forEach { editor.putLong(it.lowercase(), System.currentTimeMillis()) }
@@ -273,81 +273,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun mostrarOpcionesEntrega(faltantes: List<String>) {
-        val query = faltantes.joinToString("+")
-        AlertDialog.Builder(this)
-            .setTitle("🚚 ¿Cómo consigues lo que falta?")
-            .setMessage("Falta: ${faltantes.joinToString(", ")}")
-            .setPositiveButton("🛵 Rappi") { _, _ ->
-                abrirApp("com.grability.rappi", "https://www.rappi.com.mx/buscar/$query")
-            }
-            .setNeutralButton("🚗 Uber Eats") { _, _ ->
-                abrirApp("com.ubercab.eats", "https://www.ubereats.com/mx/search?q=$query")
-            }
-            .setNegativeButton("🏪 Yo voy") { _, _ ->
-                mostrarTipTienda()
-            }
-            .show()
-    }
-
-    private fun abrirApp(packageName: String, urlFallback: String) {
-        try {
-            val intent = packageManager.getLaunchIntentForPackage(packageName)
-            startActivity(intent ?: Intent(Intent.ACTION_VIEW, Uri.parse(urlFallback)))
-        } catch (e: Exception) {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urlFallback)))
-        }
-    }
-
-    private fun mostrarTipTienda() {
-        val hora = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val tip = when {
-            hora < 9  -> "🌅 Ve temprano — antes de las 9am hay menos gente en Soriana"
-            hora < 12 -> "☀️ Martes y jueves: frutas y verduras 20-30% off en Soriana"
-            hora < 19 -> "🌆 Chedraui tiene descuentos en lácteos después de las 5pm"
-            else      -> "🌙 Algunos Soriana 24hrs tienen liquidaciones nocturnas"
-        }
-        AlertDialog.Builder(this)
-            .setTitle("💡 Smart Tip de Ahorro")
-            .setMessage(tip)
-            .setPositiveButton("Entendido", null)
-            .show()
-    }
-
-    private fun abrirReceta(receta: String) {
-        val intent = Intent(this, RecipeActivity::class.java)
-        intent.putExtra("RECETA", receta)
-        intent.putStringArrayListExtra("INGREDIENTES", ArrayList(ingredientesDetectados))
-        startActivity(intent)
-    }
-
-    private fun mostrarUpgrade() {
-        AlertDialog.Builder(this)
-            .setTitle("🚀 Desbloquea Chef Vision")
-            .setMessage(
-                "Has agotado tus escaneos gratuitos.\n\n" +
-                "⭐ **PREMIUM** — \$699/año\n" +
-                "• 20 escaneos diarios\n" +
-                "• Todas las cocinas del mundo\n" +
-                "• Sin anuncios\n" +
-                "• Sugerencias personalizadas\n\n" +
-                "👑 **EMBAJADOR** — \$899/año\n" +
-                "• Escaneos ilimitados\n" +
-                "• Memoria familiar completa 💖\n" +
-                "• Recordatorios de cumpleaños\n" +
-                "• Planes Fitness, Vegano, Postres y Maridaje\n" +
-                "• Integración Rappi/Uber Eats"
-            )
-            .setPositiveButton("👑 Quiero ser Embajador") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
-            }
-            .setNeutralButton("⭐ Premium") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Luego", null)
-            .show()
-    }
-
     private fun evaluarFrescura() {
         try {
             val mensaje = FreshnessManager.evaluarFrescura(this)
@@ -367,6 +292,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     object FreshnessManager {
+
         private val freshnessRules = mapOf(
             "espinaca" to 3, "lechuga" to 4, "tomate" to 5, "jitomate" to 5,
             "aguacate" to 3, "plátano" to 4, "fresa" to 3, "cilantro" to 4,
@@ -394,24 +320,35 @@ class MainActivity : AppCompatActivity() {
         fun evaluarFrescura(context: Context): String {
             val inventario = MemoryManager.obtener(context)
             if (inventario.isEmpty()) return ""
-            
+
             val prefs = context.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
             val ahora = System.currentTimeMillis()
             val criticos = mutableListOf<String>()
 
             for (item in inventario) {
-                val fechaCarga = prefs.getLong(item, 0L)
+                val key = item.lowercase()
+                val fechaCarga = prefs.getLong(key, 0L)
+
                 if (fechaCarga != 0L) {
                     val diasPasados = TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)
-                    val limite = freshnessRules ?: 7
-                    if (diasPasados >= limite) criticos.add(item)
+
+                    val limite = freshnessRules.entries.find {
+                        key.contains(it.key)
+                    }?.value ?: 7
+
+                    if (diasPasados >= limite) {
+                        criticos.add(item)
+                    }
                 }
             }
 
             return if (criticos.isNotEmpty()) {
                 val lista = criticos.joinToString(", ")
-                val primera = criticos.first().lowercase()
-                val sugerencia = sugerencias ?: "¡Cocina algo rico antes de que se pierdan!"
+
+                val sugerencia = sugerencias.entries.find {
+                    criticos.first().lowercase().contains(it.key)
+                }?.value ?: "¡Cocina algo rico antes de que se pierdan!"
+
                 "🔴 Urgente usar: $lista\n\n💡 Sugerencia: $sugerencia"
             } else ""
         }
