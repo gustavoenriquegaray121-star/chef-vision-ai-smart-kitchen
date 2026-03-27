@@ -34,9 +34,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtEvento: TextView
     private lateinit var btnScan: Button
     private lateinit var adView: AdView
-    private lateinit var progressBar: ProgressBar  // ← Nuevo: loader al escanear
+    private lateinit var progressBar: ProgressBar
 
-    // Camera moderna
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -60,12 +59,13 @@ class MainActivity : AppCompatActivity() {
         txtEvento = findViewById(R.id.txtEvento)
         btnScan = findViewById(R.id.btnScanIngredients)
         adView = findViewById(R.id.adView)
-        progressBar = findViewById(R.id.progressBar)  // Asegúrate de agregar <ProgressBar id="@+id/progressBar" ... /> en layout
+        progressBar = findViewById(R.id.progressBar)
 
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
 
         try {
-            MobileAds.initialize(this)            adView.loadAd(AdRequest.Builder().build())
+            MobileAds.initialize(this)
+            adView.loadAd(AdRequest.Builder().build())
         } catch (e: Exception) { e.printStackTrace() }
 
         EventMemoryManager.initFamilia(this)
@@ -161,14 +161,15 @@ class MainActivity : AppCompatActivity() {
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
-        progressBar.visibility = View.VISIBLE  // ← Feedback visual
+        progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
+                // Contexto familiar para Gemini
                 val eventoTexto = EventMemoryManager.buscarEventoCercano(this@MainActivity)
-                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el \( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}." }
+                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el ${it.dia}/${it.mes}. Le gusta: ${it.gustos}." }
                     ?: ""
 
                 val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
@@ -232,7 +233,6 @@ class MainActivity : AppCompatActivity() {
                     gravity = Gravity.CENTER_HORIZONTAL
                 }
 
-                // Animación suave al aparecer
                 alpha = 0f
                 animate().alpha(1f).setDuration(400).start()
             }
@@ -361,7 +361,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // FreshnessManager intacto, solo lo dejé como object dentro (si quieres moverlo a archivo aparte, dime)
     object FreshnessManager {
         private val freshnessRules = mapOf(
             "espinaca" to 3, "lechuga" to 4, "tomate" to 5, "jitomate" to 5,
@@ -399,7 +398,7 @@ class MainActivity : AppCompatActivity() {
                 val fechaCarga = prefs.getLong(item, 0L)
                 if (fechaCarga != 0L) {
                     val diasPasados = TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)
-                    val limite = freshnessRules ?: 7
+                    val limite = freshnessRules[item.lowercase()] ?: 7
                     if (diasPasados >= limite) criticos.add(item)
                 }
             }
