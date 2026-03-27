@@ -9,7 +9,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.Gravity
+import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -17,102 +20,174 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
     private var scanCount = 0
     private var userPlan = "GRATUITO"
+    private val ingredientesDetectados = mutableListOf<String>()
 
     private lateinit var chipContainer: LinearLayout
-    private lateinit var btnScan: Button
-    private lateinit var btnCart: ImageButton
     private lateinit var txtPlan: TextView
     private lateinit var txtTip: TextView
+    private lateinit var txtEvento: TextView
+    private lateinit var btnScan: Button
     private lateinit var adView: AdView
 
-    private val ingredientesDetectados = mutableListOf<String>()
+    // Cámara moderna con RegisterForActivityResult (Punto 9)
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val bitmap = result.data?.extras?.get("data") as? Bitmap
+            if (bitmap != null) {
+                procesarImagen(bitmap)
+            } else {
+                Toast.makeText(this, "⚠️ No se pudo capturar imagen", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Inicializar Vistas
         chipContainer = findViewById(R.id.chipContainer)
-        btnScan = findViewById(R.id.btnScanIngredients)
-        btnCart = findViewById(R.id.btnGoToCart)
         txtPlan = findViewById(R.id.txtPlan)
         txtTip = findViewById(R.id.txtTip)
+        txtEvento = findViewById(R.id.txtEvento)
+        btnScan = findViewById(R.id.btnScanIngredients)
+        adView = findViewById(R.id.adView)
 
-        // API Key desde BuildConfig
+        // Configuración de Motor y Ads
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
-
-        // AdMob
         try {
             MobileAds.initialize(this) {}
-            adView = findViewById(R.id.adView)
             adView.loadAd(AdRequest.Builder().build())
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) { e.printStackTrace() }
 
-        // Cargar scan count
+        // Vínculo Familiar (Puntos 18-21)
+        EventMemoryManager.initFamilia(this)
+
+        // Cargar Estado de Usuario y Plan
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         scanCount = prefs.getInt("scan_count", 0)
         actualizarUIPlan()
 
-        // Cargar memoria
-        try {
-            val guardados = MemoryManager.obtener(this)
-            if (guardados.isNotEmpty()) {
-                ingredientesDetectados.addAll(guardados)
-                mostrarOpciones()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        // Cargar Ingredientes de Memoria
+        val guardados = MemoryManager.obtener(this)
+        if (guardados.isNotEmpty()) {
+            ingredientesDetectados.addAll(guardados)
+            mostrarOpciones()
         }
 
-        // Tip inteligente por hora
+        // Tips y Eventos (Punto 14 y 20)
         mostrarTipPorHora()
+        verificarEventoFamiliar()
 
-        // Truco desarrollador — mantén presionado el título
-        txtPlan.setOnLongClickListener {
-            scanCount = 0
-            prefs.edit().putInt("scan_count", 0).apply()
-            actualizarUIPlan()
-            Toast.makeText(this, "🚀 Modo Dev: Escaneos reseteados", Toast.LENGTH_LONG).show()
-            true
-        }
+        // Animación Pulsante (Punto 3 y 33)
+        val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
+        btnScan.startAnimation(pulse)
 
+        // Evaluar Semáforo de Frescura al abrir (Punto 11)
+        ejecutarAlertaFrescura()
+
+        // Listener de Escaneo
         btnScan.setOnClickListener {
             if (puedeEscanear()) {
-                actualizarUIPlan()
                 abrirCamara()
             } else {
                 mostrarUpgrade()
             }
         }
 
-        btnCart.setOnClickListener {
+        // Acceso al Carrito
+        findViewById<View>(R.id.btnGoToCart).setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
         }
 
-        // Semáforo de frescura al abrir
-        evaluarFrescura()
+        // Truco Dev: Resetear contador
+        txtPlan.setOnLongClickListener {
+            scanCount = 0
+            prefs.edit().putInt("scan_count", 0).apply()
+            actualizarUIPlan()
+            Toast.makeText(this, "🚀 Dev: Escaneos reseteados", Toast.LENGTH_LONG).show()
+            true
+        }
+    }
+
+    private fun verificarEventoFamiliar() {
+        val evento = EventMemoryManager.buscarEventoCercano(this)
+        if (evento != null) {
+            val mensaje = EventMemoryManager.obtenerMensajeEvento(evento)
+            if (mensaje.isNotEmpty()) {
+                txtEvento.visibility = View.VISIBLE
+                txtEvento.text = mensaje
+                // Punto 22: Icono de pastel en el botón Scan
+                btnScan.text = "🎂 SCAN"
+            }
+        }
+    }
+
+    private fun ejecutarAlertaFrescura() {
+        val alerta = FreshnessManager.evaluarFrescura(this)
+        if (alerta.isNotEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("🚨 Alerta Desperdicio Cero")
+                .setMessage(alerta)
+                .setPositiveButton("Cocinar ahora", null)
+                .show()
+        }
+    }
+
+    private fun abrirCamara() {
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        cameraLauncher.launch(intent)
+    }
+
+    private fun procesarImagen(bitmap: Bitmap) {
+        txtTip.text = "🔍 Analizando con IA..."
+        btnScan.isEnabled = false
+
+        lifecycleScope.launch {
+            try {
+                val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
+                val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
+
+                if (ingredientes.isNotEmpty()) {
+                    ingredientesDetectados.clear()
+                    ingredientesDetectados.addAll(ingredientes)
+                    MemoryManager.guardar(this@MainActivity, ingredientes)
+                    mostrarOpciones()
+                } else {
+                    Toast.makeText(this@MainActivity, "⚠️ IA no detectó, modo offline", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                btnScan.isEnabled = true
+                actualizarUIPlan()
+                mostrarTipPorHora()
+            }
+        }
     }
 
     private fun actualizarUIPlan() {
         val limite = when (userPlan) {
-            "GRATUITO" -> 3
             "PREMIUM" -> 20
-            else -> 99999
+            "SUPER"   -> 99999
+            else      -> 3
         }
         txtPlan.text = "Plan: $userPlan | Escaneos: $scanCount / $limite"
     }
 
     private fun puedeEscanear(): Boolean {
         val limite = when (userPlan) {
-            "GRATUITO" -> 3
             "PREMIUM" -> 20
-            else -> 99999
+            "SUPER"   -> 99999
+            else      -> 3
         }
         return if (scanCount < limite) {
             scanCount++
@@ -122,260 +197,131 @@ class MainActivity : AppCompatActivity() {
         } else false
     }
 
-    private fun abrirCamara() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (intent.resolveActivity(packageManager) != null) {
-            startActivityForResult(intent, 100)
-        } else {
-            Toast.makeText(this, "No se encontró cámara", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 100 && resultCode == RESULT_OK) {
-            procesarImagen(data)
-        }
-    }
-
-    private fun procesarImagen(data: Intent?) {
-        // Obtener bitmap real de la cámara
-        val bitmap = data?.extras?.get("data") as? Bitmap
-
-        if (bitmap != null) {
-            txtPlan.text = "🔍 Analizando con IA..."
-
-            lifecycleScope.launch {
-                try {
-                    // Resize para optimizar — máximo 512x512
-                    val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
-
-                    // Gemini real detecta ingredientes
-                    val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
-
-                    if (ingredientes.isNotEmpty()) {
-                        ingredientesDetectados.clear()
-                        ingredientesDetectados.addAll(ingredientes)
-                        MemoryManager.guardar(this@MainActivity, ingredientes)
-                        mostrarOpciones()
-                    } else {
-                        // Fallback al RecipeEngine offline
-                        ingredientesDetectados.clear()
-                        ingredientesDetectados.addAll(listOf("huevo", "cebolla"))
-                        mostrarOpciones()
-                        Toast.makeText(
-                            this@MainActivity,
-                            "⚠️ IA no detectó ingredientes, usando modo offline",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "❌ Error: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } finally {
-                    actualizarUIPlan()
-                }
-            }
-        } else {
-            Toast.makeText(this, "No se pudo capturar imagen", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
+        val tvDetectados = TextView(this).apply {
+            text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
+            textSize = 13f
+            setTextColor(Color.parseColor("#4CAF50"))
+            setPadding(16, 8, 16, 16)
+            gravity = Gravity.CENTER
+        }
+        chipContainer.addView(tvDetectados)
+
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
-
-        // Mostrar ingredientes detectados
-        val tvIngredientes = TextView(this)
-        tvIngredientes.text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
-        tvIngredientes.textSize = 13f
-        tvIngredientes.setPadding(10, 10, 10, 16)
-        tvIngredientes.setTextColor(Color.parseColor("#4CAF50"))
-        chipContainer.addView(tvIngredientes)
-
         opciones.forEach { receta ->
-            val chip = TextView(this)
-            chip.text = receta.uppercase()
-            chip.setTextColor(Color.WHITE)
-            chip.textSize = 14f
-            chip.setPadding(45, 25, 45, 25)
-            chip.gravity = Gravity.CENTER
-
-            val shape = GradientDrawable()
-            shape.cornerRadius = 75f
-            shape.setColor(Color.parseColor("#FF5722"))
-            shape.setStroke(2, Color.parseColor("#E64A19"))
-            chip.background = shape
-
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            params.setMargins(18, 18, 18, 18)
-            chip.layoutParams = params
+            val chip = TextView(this).apply {
+                text = receta
+                setTextColor(Color.WHITE)
+                textSize = 15f
+                setPadding(48, 28, 48, 28)
+                gravity = Gravity.CENTER
+                background = GradientDrawable().apply {
+                    cornerRadius = 80f
+                    setColor(Color.parseColor("#FF5722"))
+                    setStroke(2, Color.parseColor("#E64A19"))
+                }
+                layoutParams = LinearLayout.LayoutParams(-2, -2).apply {
+                    setMargins(16, 12, 16, 12)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            }
 
             chip.setOnClickListener {
                 val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
-
                 if (faltantes.isNotEmpty()) {
-                    // Mostrar sustitución inteligente con Gemini
                     lifecycleScope.launch {
-                        val sustitucion = GeminiEngine.sugerirSustitucion(
-                            faltantes.first(),
-                            ingredientesDetectados
-                        )
-
+                        val sustitucion = GeminiEngine.sugerirSustitucion(faltantes.first(), ingredientesDetectados)
                         AlertDialog.Builder(this@MainActivity)
-                            .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
+                            .setTitle("🛒 Falta: ${faltantes.joinToString(", ")}")
                             .setMessage("$sustitucion\n\n¿Qué deseas hacer?")
-                            .setPositiveButton("Agregar al carrito") { _, _ ->
-                                CartMemory.agregarLista(this@MainActivity, faltantes)
-                                mostrarOpcionesEntrega(faltantes)
-                            }
-                            .setNegativeButton("Cocinar con lo que tengo") { _, _ ->
-                                abrirReceta(receta)
-                            }
-                            .setNeutralButton("Ver receta") { _, _ ->
-                                abrirReceta(receta)
-                            }
+                            .setPositiveButton("Comprar") { _, _ -> mostrarOpcionesEntrega(faltantes) }
+                            .setNegativeButton("Cocinar así") { _, _ -> abrirReceta(receta) }
                             .show()
                     }
-                } else {
-                    abrirReceta(receta)
-                }
+                } else { abrirReceta(receta) }
             }
-
             chipContainer.addView(chip)
         }
     }
 
     private fun mostrarOpcionesEntrega(faltantes: List<String>) {
         val query = faltantes.joinToString("+")
-
         AlertDialog.Builder(this)
-            .setTitle("🚚 ¿Cómo quieres conseguirlo?")
-            .setMessage("Tienes faltantes: ${faltantes.joinToString(", ")}")
-            .setPositiveButton("🛵 Rappi") { _, _ ->
-                abrirApp(
-                    "com.grability.rappi",
-                    "https://www.rappi.com.mx/buscar/$query"
-                )
-            }
-            .setNeutralButton("🚗 Uber Eats") { _, _ ->
-                abrirApp(
-                    "com.ubercab.eats",
-                    "https://www.ubereats.com/mx/search?q=$query"
-                )
-            }
-            .setNegativeButton("🏪 Yo voy") { _, _ ->
-                mostrarTipSoriana()
-            }
+            .setTitle("🚚 ¿Cómo lo conseguimos?")
+            .setPositiveButton("Rappi") { _, _ -> abrirApp("com.grability.rappi", "https://rappi.mx/buscar/$query") }
+            .setNeutralButton("Uber Eats") { _, _ -> abrirApp("com.ubercab.eats", "https://ubereats.com/search?q=$query") }
+            .setNegativeButton("Tienda") { _, _ -> mostrarTipTienda() }
             .show()
     }
 
-    private fun abrirApp(packageName: String, urlFallback: String) {
-        try {
-            val intent = packageManager.getLaunchIntentForPackage(packageName)
-            if (intent != null) {
-                startActivity(intent)
-            } else {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urlFallback)))
-            }
-        } catch (e: Exception) {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urlFallback)))
-        }
+    private fun abrirApp(pkg: String, url: String) {
+        val intent = packageManager.getLaunchIntentForPackage(pkg)
+        startActivity(intent ?: Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
-    private fun mostrarTipSoriana() {
+    private fun mostrarTipTienda() {
         val hora = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
         val tip = when {
-            hora < 9  -> "🌅 Ve temprano — antes de las 9am hay menos gente en Soriana"
-            hora < 12 -> "☀️ Buen momento para ir — martes y jueves son días de frutas y verduras con 20-30% de descuento"
-            hora < 15 -> "🌞 Mediodía — Walmart tiene ofertas de mediodía en lácteos"
-            hora < 19 -> "🌆 Tarde — Chedraui tiene descuentos en pan y tortillas después de las 5pm"
-            else      -> "🌙 Noche — algunos Soriana 24hrs tienen liquidaciones nocturnas"
+            hora < 9  -> "🌅 Ve ya: Soriana está vacío antes de las 9am"
+            hora < 12 -> "☀️ Martes y Jueves: 20-30% off frutas en Soriana"
+            else      -> "🌙 Ofertas nocturnas en Soriana 24hrs"
         }
-
-        AlertDialog.Builder(this)
-            .setTitle("💡 Smart Tip de Ahorro")
-            .setMessage(tip)
-            .setPositiveButton("Entendido", null)
-            .show()
-    }
-
-    private fun abrirReceta(receta: String) {
-        val intent = Intent(this, RecipeActivity::class.java)
-        intent.putExtra("RECETA", receta)
-        intent.putStringArrayListExtra("INGREDIENTES", ArrayList(ingredientesDetectados))
-        startActivity(intent)
-    }
-
-    private fun mostrarUpgrade() {
-        AlertDialog.Builder(this)
-            .setTitle("🚀 Chef Vision Premium")
-            .setMessage(
-                "Has agotado tus escaneos gratuitos.\n\n" +
-                "⭐ PREMIUM \$699/año:\n" +
-                "• 20 escaneos diarios\n" +
-                "• Todas las cocinas\n" +
-                "• Sin anuncios\n\n" +
-                "👑 SÚPER PREMIUM \$899/año:\n" +
-                "• Ilimitado\n" +
-                "• Fitness, Vegano, Postres\n" +
-                "• Maridaje con vinos\n" +
-                "• Integración Rappi/Uber"
-            )
-            .setPositiveButton("👑 Súper Premium") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente", Toast.LENGTH_SHORT).show()
-            }
-            .setNeutralButton("⭐ Premium") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Luego", null)
-            .show()
+        AlertDialog.Builder(this).setTitle("💡 Tip").setMessage(tip).show()
     }
 
     private fun mostrarTipPorHora() {
         val hora = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
         txtTip.text = when {
-            hora < 11 -> "🌅 Buenos días — ¿Qué hay en tu refri para el desayuno?"
-            hora < 15 -> "☀️ Hora de la comida — escanea y te sugiero algo rico"
-            hora < 19 -> "🌆 Tarde — ¿Ya pensaste qué vas a cenar?"
-            else      -> "🌙 Buenas noches — planea el desayuno de mañana"
+            hora < 11 -> "🌅 Buenos días — ¿Qué desayunamos?"
+            hora < 15 -> "☀️ Hora de comida — ¡Escanea!"
+            else      -> "🌙 Planifica tu cena o el desayuno de mañana"
         }
     }
 
-    private fun evaluarFrescura() {
-        try {
-            val ingredientes = MemoryManager.obtener(this)
-            if (ingredientes.isEmpty()) return
-
-            val mensaje = StringBuilder()
-            mensaje.append("📊 Estado de tu Smart Kitchen\n\n")
-            mensaje.append("🔴 Consumir hoy: Espinacas\n")
-            mensaje.append("🟡 Usar pronto: Tomates\n")
-            mensaje.append("🟢 Fresco: Cebollas y Huevos\n\n")
-            mensaje.append("💡 Tip: Martes y jueves — frutas y verduras 20% off en Soriana 🛒")
-
-            AlertDialog.Builder(this)
-                .setTitle("🚨 Alerta Desperdicio Cero")
-                .setMessage(mensaje.toString())
-                .setPositiveButton("Cocinar con esto") { _, _ ->
-                    mostrarOpciones()
-                }
-                .setNegativeButton("Luego", null)
-                .show()
-
-        } catch (e: Exception) {
-            e.printStackTrace()
+    private fun abrirReceta(r: String) {
+        val intent = Intent(this, RecipeActivity::class.java).apply {
+            putExtra("RECETA", r)
+            putStringArrayListExtra("INGREDIENTES", ArrayList(ingredientesDetectados))
         }
+        startActivity(intent)
+    }
+
+    private fun mostrarUpgrade() {
+        AlertDialog.Builder(this)
+            .setTitle("🚀 Plan Embajador")
+            .setMessage("Escaneos agotados. Únete al Plan Embajador para memoria familiar 💖 y escaneos ilimitados.")
+            .setPositiveButton("Saber más", null)
+            .show()
     }
 
     override fun onDestroy() {
         if (::adView.isInitialized) adView.destroy()
         super.onDestroy()
+    }
+}
+
+// --- GESTIÓN DE FRESCURA (FRESHNESS MANAGER) ---
+object FreshnessManager {
+    private val rules = mapOf("espinaca" to 3, "tomate" to 5, "pollo" to 2, "huevo" to 14, "cebolla" to 10)
+
+    fun evaluarFrescura(context: Context): String {
+        val inventario = MemoryManager.obtener(context)
+        if (inventario.isEmpty()) return ""
+        
+        val prefs = context.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val criticos = mutableListOf<String>()
+
+        inventario.forEach { ing ->
+            val fecha = prefs.getLong(ing, 0L)
+            if (fecha != 0L) {
+                val dias = TimeUnit.MILLISECONDS.toDays(now - fecha).toInt()
+                val max = rules.entries.find { ing.contains(it.key) }?.value ?: 7
+                if (dias >= max) criticos.add(ing)
+            }
+        }
+
+        return if (criticos.isNotEmpty()) "🔴 ¡Usa HOY para evitar desperdicio!: ${criticos.joinToString(", ")}" else ""
     }
 }
