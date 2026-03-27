@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.Gravity
 import android.view.View
 import android.view.animation.AnimationUtils
@@ -20,6 +19,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnScan: Button
     private lateinit var adView: AdView
 
-    // Camera moderna
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -66,9 +65,7 @@ class MainActivity : AppCompatActivity() {
         try {
             MobileAds.initialize(this) {}
             adView.loadAd(AdRequest.Builder().build())
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) { e.printStackTrace() }
 
         // Familia
         EventMemoryManager.initFamilia(this)
@@ -90,6 +87,9 @@ class MainActivity : AppCompatActivity() {
 
         // Evento familiar cercano
         verificarEventoFamiliar()
+
+        // Semáforo de frescura al abrir
+        evaluarFrescura()
 
         // Animación pulsante
         val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
@@ -115,9 +115,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnGoToCart).setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
         }
-
-        // Semáforo de frescura (usando FreshnessManager)
-        evaluarFrescura()
     }
 
     private fun verificarEventoFamiliar() {
@@ -127,6 +124,7 @@ class MainActivity : AppCompatActivity() {
             if (mensaje.isNotEmpty()) {
                 txtEvento.visibility = View.VISIBLE
                 txtEvento.text = mensaje
+                // Botón pulsante con pastelito en cumpleaños
                 btnScan.text = "🎂 SCAN"
             }
         }
@@ -166,8 +164,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun abrirCamara() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        cameraLauncher.launch(intent)
+        val intent = android.provider.MediaStore.ACTION_IMAGE_CAPTURE
+        cameraLauncher.launch(
+            android.content.Intent(intent)
+        )
     }
 
     private fun procesarImagen(bitmap: Bitmap) {
@@ -178,8 +178,9 @@ class MainActivity : AppCompatActivity() {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
+                // Contexto familiar para Gemini
                 val eventoTexto = EventMemoryManager.buscarEventoCercano(this@MainActivity)
-                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el \( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}." }
+                    ?.let { "Evento cercano: cumpleaños de ${it.nombre} el ${it.dia}/${it.mes}. Le gusta: ${it.gustos}." }
                     ?: ""
 
                 val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
@@ -193,7 +194,11 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.clear()
                     ingredientesDetectados.addAll(listOf("huevo", "cebolla"))
                     mostrarOpciones()
-                    Toast.makeText(this@MainActivity, "⚠️ Modo offline activado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "⚠️ Modo offline activado",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -208,40 +213,38 @@ class MainActivity : AppCompatActivity() {
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
 
-        val tvDetectados = TextView(this).apply {
-            text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
-            textSize = 13f
-            setPadding(16, 8, 16, 16)
-            setTextColor(Color.parseColor("#4CAF50"))
-            gravity = Gravity.CENTER
-        }
+        // Fade out chips de cocinas si los hubiera
+        val tvDetectados = TextView(this)
+        tvDetectados.text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
+        tvDetectados.textSize = 13f
+        tvDetectados.setTextColor(Color.parseColor("#4CAF50"))
+        tvDetectados.setPadding(16, 8, 16, 16)
+        tvDetectados.gravity = Gravity.CENTER
         chipContainer.addView(tvDetectados)
 
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
 
         opciones.forEach { receta ->
-            val chip = TextView(this).apply {
-                text = receta
-                setTextColor(Color.WHITE)
-                textSize = 15f
-                setPadding(48, 28, 48, 28)
-                gravity = Gravity.CENTER
+            val chip = TextView(this)
+            chip.text = receta
+            chip.setTextColor(Color.WHITE)
+            chip.textSize = 15f
+            chip.setPadding(48, 28, 48, 28)
+            chip.gravity = Gravity.CENTER
 
-                val shape = GradientDrawable().apply {
-                    cornerRadius = 80f
-                    setColor(Color.parseColor("#FF5722"))
-                    setStroke(2, Color.parseColor("#E64A19"))
-                }
-                background = shape
+            val shape = GradientDrawable()
+            shape.cornerRadius = 80f
+            shape.setColor(Color.parseColor("#FF5722"))
+            shape.setStroke(2, Color.parseColor("#E64A19"))
+            chip.background = shape
 
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(16, 12, 16, 12)
-                    gravity = Gravity.CENTER_HORIZONTAL
-                }
-            }
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(16, 12, 16, 12)
+            params.gravity = Gravity.CENTER_HORIZONTAL
+            chip.layoutParams = params
 
             chip.setOnClickListener {
                 val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
@@ -351,35 +354,50 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // Viejo evaluarFrescura (se mantiene por si acaso)
+    // --- Lógica de Semáforo de Frescura (FreshnessManager) ---
     private fun evaluarFrescura() {
         try {
-            val ingredientes = MemoryManager.obtener(this)
-            if (ingredientes.isEmpty()) return
-
-            val mensaje = StringBuilder()
-            mensaje.append("📊 Estado de tu Smart Kitchen\n\n")
-            mensaje.append("🔴 Consumir hoy: Espinacas\n")
-            mensaje.append("🟡 Usar pronto: Tomates\n")
-            mensaje.append("🟢 Fresco: Cebollas y Huevos\n\n")
-            mensaje.append("💡 Tip: Martes y jueves — frutas y verduras 20% off en Soriana 🛒")
-
-            AlertDialog.Builder(this)
-                .setTitle("🚨 Alerta Desperdicio Cero")
-                .setMessage(mensaje.toString())
-                .setPositiveButton("Cocinar con esto") { _, _ ->
-                    mostrarOpciones()
-                }
-                .setNegativeButton("Luego", null)
-                .show()
-
+            val mensaje = FreshnessManager.evaluarFrescura(this)
+            if (mensaje.isNotEmpty()) {
+                AlertDialog.Builder(this)
+                    .setTitle("🚨 Alerta Desperdicio Cero")
+                    .setMessage(mensaje)
+                    .setPositiveButton("Cocinar con esto") { _, _ ->
+                        mostrarOpciones()
+                    }
+                    .setNegativeButton("Luego", null)
+                    .show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    override fun onDestroy() {
-        if (::adView.isInitialized) adView.destroy()
-        super.onDestroy()
-    }
-}
+    object FreshnessManager {
+        // Días máximos antes de vencer por ingrediente
+        private val freshnessRules = mapOf(
+            "espinaca"   to 3,  "lechuga"    to 4,
+            "tomate"     to 5,  "jitomate"   to 5,
+            "aguacate"   to 3,  "plátano"    to 4,
+            "fresa"      to 3,  "cilantro"   to 4,
+            "pollo"      to 2,  "carne"      to 2,
+            "pescado"    to 1,  "camarón"    to 1,
+            "leche"      to 3,  "crema"      to 5,
+            "zanahoria"  to 7,  "pepino"     to 5,
+            "cebolla"    to 10, "ajo"        to 14,
+            "queso"      to 7,  "huevo"      to 14,
+            "papa"       to 10, "limón"      to 10,
+            "naranja"    to 7,  "manzana"    to 7,
+            "chile"      to 7,  "brócoli"    to 5
+        )
+
+        private val sugerencias = mapOf(
+            "espinaca"  to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
+            "tomate"    to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
+            "jitomate"  to "¿Pico de gallo, pizza casera o salsa fresca? 🍅",
+            "aguacate"  to "¿Guacamole, tostadas o tacos con aguacate? 🥑",
+            "plátano"   to "¿Plátanos fritos, licuado o pan de plátano? 🍌",
+            "pollo"     to "¿Pollo al ajillo, caldo tlalpeño o tacos? 🍗",
+            "carne"     to "¿Bistec a la mexicana, arrachera o picadillo? 🥩",
+            "pescado"   to "¡Úsalo hoy! ¿Veracruzana o tacos de pescado? 🐟",
+            "leche"     to "
