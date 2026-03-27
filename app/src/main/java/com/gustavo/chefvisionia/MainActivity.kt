@@ -70,9 +70,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refrescar tip y semáforo cada vez que el usuario regresa
         mostrarTipPorHora()
         verificarEventoFamiliar()
+        // FIX #4: semáforo también se refresca al regresar a la pantalla
+        evaluarYMostrarSemaforo()
     }
 
     override fun onDestroy() {
@@ -108,7 +109,6 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         scanCount = prefs.getInt("scan_count", 0)
 
-        // Cargar ingredientes guardados en memoria
         val guardados = MemoryManager.obtener(this)
         if (guardados.isNotEmpty()) {
             ingredientesDetectados.addAll(guardados)
@@ -121,18 +121,15 @@ class MainActivity : AppCompatActivity() {
         verificarEventoFamiliar()
         evaluarYMostrarSemaforo()
 
-        // Mostrar opciones previas si hay ingredientes en memoria
         if (ingredientesDetectados.isNotEmpty()) {
             mostrarOpciones()
         }
 
-        // Animación pulsante en el botón Scan
         val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
         btnScan.startAnimation(pulse)
     }
 
     private fun inicializarListeners() {
-        // Truco desarrollador: mantener presionado el plan
         txtPlan.setOnLongClickListener {
             scanCount = 0
             getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -208,28 +205,34 @@ class MainActivity : AppCompatActivity() {
         val inventario = MemoryManager.obtener(this)
         if (inventario.isEmpty()) return
 
-        val prefs = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
         val ahora = System.currentTimeMillis()
 
-        val rojos    = mutableListOf<Pair<String, String>>() // ingrediente + sugerencia
+        val rojos     = mutableListOf<Pair<String, String>>()
         val amarillos = mutableListOf<String>()
-        val verdes   = mutableListOf<String>()
+        val verdes    = mutableListOf<String>()
 
         inventario.forEach { ingrediente ->
-            val key = ingrediente.lowercase()
+            val key = ingrediente.lowercase().trim()
             val fechaCarga = prefs.getLong(key, 0L)
 
-            val diasPasados = if (fechaCarga != 0L)
-                TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga).toInt()
-            else 0
+            // FIX #3: ignorar ingredientes sin fecha registrada
+            if (fechaCarga == 0L) return@forEach
 
-            val limite = FreshnessManager.freshnessRules.entries
-                .find { key.contains(it.key) }?.value ?: 7
+            val diasPasados = TimeUnit.MILLISECONDS
+                .toDays(ahora - fechaCarga).toInt()
+
+            // FIX #2: match exacto primero, luego parcial como fallback
+            val limite = FreshnessManager.freshnessRules[key]
+                ?: FreshnessManager.freshnessRules.entries
+                    .find { key.contains(it.key) }?.value
+                ?: 7
 
             when {
                 diasPasados >= limite -> {
-                    val sugerencia = FreshnessManager.sugerencias.entries
-                        .find { key.contains(it.key) }?.value
+                    val sugerencia = FreshnessManager.sugerencias[key]
+                        ?: FreshnessManager.sugerencias.entries
+                            .find { key.contains(it.key) }?.value
                         ?: "¡Cocina algo rico antes de que se pierda!"
                     rojos.add(Pair(ingrediente, sugerencia))
                 }
@@ -268,8 +271,7 @@ class MainActivity : AppCompatActivity() {
                 mostrarOpciones()
             }
             .setNeutralButton("🛒 Agregar a lista") { _, _ ->
-                val ingredientesCriticos = rojos.map { it.first }
-                CartMemory.agregarLista(this, ingredientesCriticos)
+                CartMemory.agregarLista(this, rojos.map { it.first })
                 startActivity(Intent(this, CartActivity::class.java))
             }
             .setNegativeButton("Luego", null)
@@ -292,22 +294,42 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
-                val ingredientes = GeminiEngine.detectarIngredientes(bitmapResized)
+
+                // FIX #3 restaurado: contexto familiar para que Gemini sea empático
+                val contextoFamiliar = EventMemoryManager
+                    .buscarEventoCercano(this@MainActivity)
+                    ?.let {
+                        "Contexto especial: el cumpleaños de ${it.nombre} es el " +
+                        "${it.dia}/${it.mes}. Le gusta: ${it.gustos}. " +
+                        "Si es relevante, sugiere algo especial para la ocasión."
+                    } ?: ""
+
+                val ingredientes = GeminiEngine.detectarIngredientes(
+                    bitmapResized,
+                    contextoFamiliar
+                )
 
                 if (ingredientes.isNotEmpty()) {
                     ingredientesDetectados.clear()
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
 
-                    // Guardar timestamp para semáforo de frescura
-                    val inventoryPrefs = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+                    // Guardar timestamp en lowercase — FIX garantizado
+                    val inventoryPrefs = getSharedPreferences(
+                        "ChefInventory", Context.MODE_PRIVATE
+                    )
                     val editor = inventoryPrefs.edit()
-                    ingredientes.forEach { editor.putLong(it.lowercase(), System.currentTimeMillis()) }
+                    ingredientes.forEach { ingr ->
+                        editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
+                    }
                     editor.apply()
 
                     mostrarOpciones()
+
+                    // FIX #1: semáforo se actualiza después de cada escaneo
+                    evaluarYMostrarSemaforo()
+
                 } else {
-                    // Fallback offline
                     Toast.makeText(
                         this@MainActivity,
                         "⚠️ IA no detectó ingredientes — usando modo offline",
@@ -338,7 +360,6 @@ class MainActivity : AppCompatActivity() {
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
 
-        // Encabezado de ingredientes detectados
         val tvDetectados = TextView(this).apply {
             text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
             textSize = 13f
@@ -351,14 +372,13 @@ class MainActivity : AppCompatActivity() {
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
 
         if (opciones.isEmpty()) {
-            val tvVacio = TextView(this).apply {
+            chipContainer.addView(TextView(this).apply {
                 text = "😅 No encontré recetas con estos ingredientes.\nIntenta escanear de nuevo."
                 textSize = 14f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
                 setPadding(16, 24, 16, 24)
-            }
-            chipContainer.addView(tvVacio)
+            })
             return
         }
 
@@ -384,15 +404,11 @@ class MainActivity : AppCompatActivity() {
                     gravity = Gravity.CENTER_HORIZONTAL
                 }
 
-                // Fade in animado
                 alpha = 0f
                 animate().alpha(1f).setDuration(400).start()
             }
 
-            chip.setOnClickListener {
-                manejarSeleccionReceta(receta)
-            }
-
+            chip.setOnClickListener { manejarSeleccionReceta(receta) }
             chipContainer.addView(chip)
         }
     }
@@ -409,13 +425,9 @@ class MainActivity : AppCompatActivity() {
                         faltantes.first(),
                         ingredientesDetectados
                     )
-
                     AlertDialog.Builder(this@MainActivity)
                         .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
-                        .setMessage(
-                            "$sustitucion\n\n" +
-                            "¿Qué deseas hacer?"
-                        )
+                        .setMessage("$sustitucion\n\n¿Qué deseas hacer?")
                         .setPositiveButton("🛒 Agregar al carrito") { _, _ ->
                             CartMemory.agregarLista(this@MainActivity, faltantes)
                             mostrarOpcionesEntrega(faltantes)
@@ -425,7 +437,6 @@ class MainActivity : AppCompatActivity() {
                         }
                         .setNegativeButton("❌ Cancelar", null)
                         .show()
-
                 } catch (e: Exception) {
                     abrirReceta(receta)
                 }
@@ -436,18 +447,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun abrirReceta(receta: String) {
-        val intent = Intent(this, RecipeActivity::class.java).apply {
+        startActivity(Intent(this, RecipeActivity::class.java).apply {
             putExtra("RECETA", receta)
             putStringArrayListExtra("INGREDIENTES", ArrayList(ingredientesDetectados))
-        }
-        startActivity(intent)
+        })
     }
 
     // ─── OPCIONES DE ENTREGA ──────────────────────────────────────────────────
 
     private fun mostrarOpcionesEntrega(faltantes: List<String>) {
         val query = faltantes.joinToString("+")
-
         AlertDialog.Builder(this)
             .setTitle("🚚 ¿Cómo consigues lo que falta?")
             .setMessage("Falta: ${faltantes.joinToString(", ")}")
