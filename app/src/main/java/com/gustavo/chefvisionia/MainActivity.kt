@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnScan: Button
     private lateinit var adView: AdView
 
+    // Camera moderna
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -124,7 +125,6 @@ class MainActivity : AppCompatActivity() {
             if (mensaje.isNotEmpty()) {
                 txtEvento.visibility = View.VISIBLE
                 txtEvento.text = mensaje
-                // Botón pulsante con pastelito en cumpleaños
                 btnScan.text = "🎂 SCAN"
             }
         }
@@ -165,9 +165,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun abrirCamara() {
         val intent = android.provider.MediaStore.ACTION_IMAGE_CAPTURE
-        cameraLauncher.launch(
-            android.content.Intent(intent)
-        )
+        cameraLauncher.launch(android.content.Intent(intent))
     }
 
     private fun procesarImagen(bitmap: Bitmap) {
@@ -194,11 +192,7 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.clear()
                     ingredientesDetectados.addAll(listOf("huevo", "cebolla"))
                     mostrarOpciones()
-                    Toast.makeText(
-                        this@MainActivity,
-                        "⚠️ Modo offline activado",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@MainActivity, "⚠️ Modo offline activado", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -213,38 +207,40 @@ class MainActivity : AppCompatActivity() {
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
 
-        // Fade out chips de cocinas si los hubiera
-        val tvDetectados = TextView(this)
-        tvDetectados.text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
-        tvDetectados.textSize = 13f
-        tvDetectados.setTextColor(Color.parseColor("#4CAF50"))
-        tvDetectados.setPadding(16, 8, 16, 16)
-        tvDetectados.gravity = Gravity.CENTER
+        val tvDetectados = TextView(this).apply {
+            text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
+            textSize = 13f
+            setPadding(16, 8, 16, 16)
+            setTextColor(Color.parseColor("#4CAF50"))
+            gravity = Gravity.CENTER
+        }
         chipContainer.addView(tvDetectados)
 
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
 
         opciones.forEach { receta ->
-            val chip = TextView(this)
-            chip.text = receta
-            chip.setTextColor(Color.WHITE)
-            chip.textSize = 15f
-            chip.setPadding(48, 28, 48, 28)
-            chip.gravity = Gravity.CENTER
+            val chip = TextView(this).apply {
+                text = receta
+                setTextColor(Color.WHITE)
+                textSize = 15f
+                setPadding(48, 28, 48, 28)
+                gravity = Gravity.CENTER
 
-            val shape = GradientDrawable()
-            shape.cornerRadius = 80f
-            shape.setColor(Color.parseColor("#FF5722"))
-            shape.setStroke(2, Color.parseColor("#E64A19"))
-            chip.background = shape
+                val shape = GradientDrawable().apply {
+                    cornerRadius = 80f
+                    setColor(Color.parseColor("#FF5722"))
+                    setStroke(2, Color.parseColor("#E64A19"))
+                }
+                background = shape
 
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            params.setMargins(16, 12, 16, 12)
-            params.gravity = Gravity.CENTER_HORIZONTAL
-            chip.layoutParams = params
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(16, 12, 16, 12)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            }
 
             chip.setOnClickListener {
                 val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
@@ -354,7 +350,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // --- Lógica de Semáforo de Frescura (FreshnessManager) ---
     private fun evaluarFrescura() {
         try {
             val mensaje = FreshnessManager.evaluarFrescura(this)
@@ -374,30 +369,57 @@ class MainActivity : AppCompatActivity() {
     }
 
     object FreshnessManager {
-        // Días máximos antes de vencer por ingrediente
         private val freshnessRules = mapOf(
-            "espinaca"   to 3,  "lechuga"    to 4,
-            "tomate"     to 5,  "jitomate"   to 5,
-            "aguacate"   to 3,  "plátano"    to 4,
-            "fresa"      to 3,  "cilantro"   to 4,
-            "pollo"      to 2,  "carne"      to 2,
-            "pescado"    to 1,  "camarón"    to 1,
-            "leche"      to 3,  "crema"      to 5,
-            "zanahoria"  to 7,  "pepino"     to 5,
-            "cebolla"    to 10, "ajo"        to 14,
-            "queso"      to 7,  "huevo"      to 14,
-            "papa"       to 10, "limón"      to 10,
-            "naranja"    to 7,  "manzana"    to 7,
-            "chile"      to 7,  "brócoli"    to 5
+            "espinaca" to 3, "lechuga" to 4, "tomate" to 5, "jitomate" to 5,
+            "aguacate" to 3, "plátano" to 4, "fresa" to 3, "cilantro" to 4,
+            "pollo" to 2, "carne" to 2, "pescado" to 1, "camarón" to 1,
+            "leche" to 3, "crema" to 5, "zanahoria" to 7, "pepino" to 5,
+            "cebolla" to 10, "ajo" to 14, "queso" to 7, "huevo" to 14,
+            "papa" to 10, "limón" to 10, "naranja" to 7, "manzana" to 7,
+            "chile" to 7, "brócoli" to 5
         )
 
         private val sugerencias = mapOf(
-            "espinaca"  to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
-            "tomate"    to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
-            "jitomate"  to "¿Pico de gallo, pizza casera o salsa fresca? 🍅",
-            "aguacate"  to "¿Guacamole, tostadas o tacos con aguacate? 🥑",
-            "plátano"   to "¿Plátanos fritos, licuado o pan de plátano? 🍌",
-            "pollo"     to "¿Pollo al ajillo, caldo tlalpeño o tacos? 🍗",
-            "carne"     to "¿Bistec a la mexicana, arrachera o picadillo? 🥩",
-            "pescado"   to "¡Úsalo hoy! ¿Veracruzana o tacos de pescado? 🐟",
-            "leche"     to "
+            "espinaca" to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
+            "tomate" to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
+            "jitomate" to "¿Pico de gallo, pizza casera o salsa fresca? 🍅",
+            "aguacate" to "¿Guacamole, tostadas o tacos con aguacate? 🥑",
+            "plátano" to "¿Plátanos fritos, licuado o pan de plátano? 🍌",
+            "pollo" to "¿Pollo al ajillo, caldo tlalpeño o tacos? 🍗",
+            "carne" to "¿Bistec a la mexicana, arrachera o picadillo? 🥩",
+            "pescado" to "¡Úsalo hoy! ¿Veracruzana o tacos de pescado? 🐟",
+            "leche" to "¿Un licuado, arroz con leche o avena? 🥛",
+            "huevo" to "¿Unos huevos divorciados o un omelette? 🍳",
+            "cebolla" to "¿Sopa de cebolla o aros de cebolla crujientes? 🧅"
+        )
+
+        fun evaluarFrescura(context: Context): String {
+            val inventario = MemoryManager.obtener(context)
+            if (inventario.isEmpty()) return ""
+            
+            val prefs = context.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+            val ahora = System.currentTimeMillis()
+            val criticos = mutableListOf<String>()
+
+            for (item in inventario) {
+                val fechaCarga = prefs.getLong(item, 0L)
+                if (fechaCarga != 0L) {
+                    val diasPasados = TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)
+                    val limite = freshnessRules[item.lowercase()] ?: 7
+                    if (diasPasados >= limite) criticos.add(item)
+                }
+            }
+
+            return if (criticos.isNotEmpty()) {
+                val lista = criticos.joinToString(", ")
+                val sugerencia = sugerencias[criticos.first().lowercase()] ?: "¡Cocina algo rico antes de que se pierdan!"
+                "🔴 Urgente usar: $lista\n\n💡 Sugerencia: $sugerencia"
+            } else ""
+        }
+    }
+
+    override fun onDestroy() {
+        if (::adView.isInitialized) adView.destroy()
+        super.onDestroy()
+    }
+}
