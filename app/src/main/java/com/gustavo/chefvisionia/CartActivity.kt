@@ -20,7 +20,7 @@ class CartActivity : AppCompatActivity() {
         listView         = findViewById(R.id.listView)
         val btnAdd       = findViewById<Button>(R.id.btnAdd)
         val btnWhats     = findViewById<Button>(R.id.btnWhats)
-        val btnBack      = findViewById<ImageButton>(R.id.btnBack) // ← FIX: ImageButton
+        val btnBack      = findViewById<ImageButton>(R.id.btnBack)
         val btnClear     = findViewById<Button>(R.id.btnClear)
         txtTotal         = findViewById(R.id.txtTotal)
 
@@ -31,21 +31,19 @@ class CartActivity : AppCompatActivity() {
         actualizarTotal()
 
         btnAdd.setOnClickListener { mostrarDialogoAgregar() }
-
         btnWhats.setOnClickListener { compartirWhatsApp() }
-
         btnBack.setOnClickListener { finish() }
 
         btnClear.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Vaciar carrito")
+                .setTitle("🗑️ Vaciar lista")
                 .setMessage("¿Seguro que quieres eliminar todo?")
                 .setPositiveButton("Sí") { _, _ ->
                     lista.clear()
                     CartMemory.limpiar(this)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-                    Toast.makeText(this, "Carrito vacío ✅", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Lista vacía ✅", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
@@ -62,7 +60,7 @@ class CartActivity : AppCompatActivity() {
                     CartMemory.agregarLista(this, lista)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-                    Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Eliminado ✅", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
@@ -90,10 +88,15 @@ class CartActivity : AppCompatActivity() {
             .show()
     }
 
+    // ─── TOTAL SIN PRECIO FALSO ───────────────────────────────────────────────
     private fun actualizarTotal() {
-        val precioPorItem = 25
-        val total = lista.size * precioPorItem
-        txtTotal.text = "Total estimado: $$total MXN"
+        if (lista.isEmpty()) {
+            txtTotal.text = "Lista vacía — agrega productos 🛒"
+            return
+        }
+        val cantidad = lista.size
+        val texto = if (cantidad == 1) "1 producto en tu lista" else "$cantidad productos en tu lista"
+        txtTotal.text = "🛒 $texto"
     }
 
     private fun compartirWhatsApp() {
@@ -101,12 +104,12 @@ class CartActivity : AppCompatActivity() {
             Toast.makeText(this, "La lista está vacía", Toast.LENGTH_SHORT).show()
             return
         }
-        val texto = lista.joinToString("\n")
+        val numerados = lista.mapIndexed { i, item -> "${i + 1}. $item" }.joinToString("\n")
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(
                 Intent.EXTRA_TEXT,
-                "🛒 Mi Lista del Súper — Chef Vision IA\n\n$texto\n\n💎 v.25 Certified by Altea-Garay"
+                "🛒 Mi Lista del Súper — Chef Vision IA\n\n$numerados\n\n💎 v.25 Certified by Altea-Garay"
             )
         }
         startActivity(Intent.createChooser(intent, "Enviar lista"))
