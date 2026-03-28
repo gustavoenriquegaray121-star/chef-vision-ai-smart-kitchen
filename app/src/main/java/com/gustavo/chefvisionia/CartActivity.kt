@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import android.widget.ListView // Importación explícita para evitar el Unresolved reference
+import android.widget.Toast
 
 class CartActivity : AppCompatActivity() {
 
@@ -17,6 +19,7 @@ class CartActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cart)
 
+        // Inicialización de vistas
         listView    = findViewById(R.id.listView)
         val btnAdd  = findViewById<Button>(R.id.btnAdd)
         val btnWhats = findViewById<Button>(R.id.btnWhats)
@@ -24,12 +27,14 @@ class CartActivity : AppCompatActivity() {
         val btnClear = findViewById<Button>(R.id.btnClear)
         txtTotal     = findViewById(R.id.txtTotal)
 
+        // Carga de datos desde memoria
         lista   = CartMemory.obtenerLista(this)
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista)
         listView.adapter = adapter
 
         actualizarTotal()
 
+        // Listeners de botones
         btnAdd.setOnClickListener { mostrarDialogoAgregar() }
 
         btnWhats.setOnClickListener { compartirWhatsApp() }
@@ -51,6 +56,7 @@ class CartActivity : AppCompatActivity() {
                 .show()
         }
 
+        // Eliminación individual por pulso largo
         listView.setOnItemLongClickListener { _, _, position, _ ->
             val item = lista[position]
             AlertDialog.Builder(this)
@@ -59,6 +65,7 @@ class CartActivity : AppCompatActivity() {
                 .setPositiveButton("Eliminar") { _, _ ->
                     lista.removeAt(position)
                     CartMemory.limpiar(this)
+                    // Se re-guarda la lista actualizada
                     CartMemory.agregarLista(this, lista)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
@@ -79,6 +86,7 @@ class CartActivity : AppCompatActivity() {
                 val texto = input.text.toString().trim()
                 if (texto.isNotEmpty()) {
                     lista.add(texto)
+                    // Sincronización con memoria
                     CartMemory.agregarLista(this, listOf(texto))
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
@@ -91,6 +99,7 @@ class CartActivity : AppCompatActivity() {
     }
 
     private fun actualizarTotal() {
+        // Tu lógica de precio estimado por item
         val precioPorItem = 25
         val total = lista.size * precioPorItem
         txtTotal.text = "Total estimado: $$total MXN"
