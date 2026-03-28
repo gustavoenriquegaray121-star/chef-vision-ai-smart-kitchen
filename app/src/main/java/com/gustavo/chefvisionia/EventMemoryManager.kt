@@ -3,6 +3,7 @@ package com.gustavo.chefvisionia
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.util.Calendar
 
 data class EventoFamiliar(
     val nombre: String,
@@ -35,9 +36,9 @@ object EventMemoryManager {
     }
 
     fun buscarEventoCercano(context: Context): EventoFamiliar? {
-        val hoy = java.util.Calendar.getInstance()
-        val mesActual = hoy.get(java.util.Calendar.MONTH) + 1
-        val diaActual = hoy.get(java.util.Calendar.DAY_OF_MONTH)
+        val hoy = Calendar.getInstance()
+        val mesActual = hoy.get(Calendar.MONTH) + 1
+        val diaActual = hoy.get(Calendar.DAY_OF_MONTH)
         val eventos = obtenerTodos(context)
 
         return eventos.find { evento ->
@@ -57,16 +58,16 @@ object EventMemoryManager {
                 "🎉 ¡HOY es el cumpleaños de ${evento.nombre}! ¿Hacemos algo especial? Le encanta: ${evento.gustos}"
             diasRestantes == 1 ->
                 "🎂 ¡Mañana es el cumpleaños de ${evento.nombre}! Prepara algo rico. Le gusta: ${evento.gustos}"
-            diasRestantes <= 7 ->
+            diasRestantes in 2..7 ->
                 "💡 En $diasRestantes días es el cumpleaños de ${evento.nombre}. ¿Empezamos a planear? Le gusta: ${evento.gustos}"
             else -> ""
         }
     }
 
     private fun calcularDiasRestantes(evento: EventoFamiliar): Int {
-        val hoy = java.util.Calendar.getInstance()
-        val mesActual = hoy.get(java.util.Calendar.MONTH) + 1
-        val diaActual = hoy.get(java.util.Calendar.DAY_OF_MONTH)
+        val hoy = Calendar.getInstance()
+        val mesActual = hoy.get(Calendar.MONTH) + 1
+        val diaActual = hoy.get(Calendar.DAY_OF_MONTH)
 
         return when {
             evento.mes == mesActual -> evento.dia - diaActual
@@ -76,27 +77,24 @@ object EventMemoryManager {
     }
 
     fun initFamilia(context: Context) {
-        if (obtenerTodos(context).isEmpty()) {
-            guardarEvento(
-                context, EventoFamiliar(
+        val actuales = obtenerTodos(context)
+        if (actuales.isEmpty()) {
+            val listaInicial = listOf(
+                EventoFamiliar(
                     nombre = "Denisse",
                     relacion = "Hija",
                     dia = 21,
                     mes = 10,
                     gustos = "Chocolate, fresas y postres coloridos"
-                )
-            )
-            guardarEvento(
-                context, EventoFamiliar(
+                ),
+                EventoFamiliar(
                     nombre = "Daniel",
                     relacion = "Hijo",
                     dia = 27,
                     mes = 2,
                     gustos = "Pizza, tacos y comida mexicana"
-                )
-            )
-            guardarEvento(
-                context, EventoFamiliar(
+                ),
+                EventoFamiliar(
                     nombre = "Andrés",
                     relacion = "Hijo",
                     dia = 23,
@@ -104,6 +102,10 @@ object EventMemoryManager {
                     gustos = "Comida mexicana picante y tamales"
                 )
             )
+            
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val json = Gson().toJson(listaInicial)
+            prefs.edit().putString(KEY_EVENTS, json).apply()
         }
     }
 }
