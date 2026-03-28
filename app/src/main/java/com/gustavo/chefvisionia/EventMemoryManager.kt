@@ -40,15 +40,12 @@ object EventMemoryManager {
         val diaActual = hoy.get(java.util.Calendar.DAY_OF_MONTH)
         val eventos = obtenerTodos(context)
 
-        // Busca eventos en los próximos 7 días
         return eventos.find { evento ->
-            val diasHastaEvento = if (evento.mes == mesActual) {
-                evento.dia - diaActual
-            } else if (evento.mes == mesActual + 1) {
-                val diasRestantesMes = 30 - diaActual
-                diasRestantesMes + evento.dia
-            } else -1
-
+            val diasHastaEvento = when {
+                evento.mes == mesActual -> evento.dia - diaActual
+                evento.mes == mesActual + 1 -> (30 - diaActual) + evento.dia
+                else -> -1
+            }
             diasHastaEvento in 0..7
         }
     }
@@ -56,9 +53,12 @@ object EventMemoryManager {
     fun obtenerMensajeEvento(evento: EventoFamiliar): String {
         val diasRestantes = calcularDiasRestantes(evento)
         return when {
-            diasRestantes == 0 -> "🎉 ¡HOY es el cumpleaños de ${evento.nombre}! ¿Hacemos algo especial con lo que tienes? Le encanta: ${evento.gustos}"
-            diasRestantes == 1 -> "🎂 ¡Mañana es el cumpleaños de ${evento.nombre}! Prepara algo rico. Le gusta: ${evento.gustos}"
-            diasRestantes <= 7 -> "💡 En $diasRestantes días es el cumpleaños de ${evento.nombre}. ¿Empezamos a planear? Le gusta: ${evento.gustos}"
+            diasRestantes == 0 ->
+                "🎉 ¡HOY es el cumpleaños de ${evento.nombre}! ¿Hacemos algo especial? Le encanta: ${evento.gustos}"
+            diasRestantes == 1 ->
+                "🎂 ¡Mañana es el cumpleaños de ${evento.nombre}! Prepara algo rico. Le gusta: ${evento.gustos}"
+            diasRestantes <= 7 ->
+                "💡 En $diasRestantes días es el cumpleaños de ${evento.nombre}. ¿Empezamos a planear? Le gusta: ${evento.gustos}"
             else -> ""
         }
     }
@@ -68,37 +68,42 @@ object EventMemoryManager {
         val mesActual = hoy.get(java.util.Calendar.MONTH) + 1
         val diaActual = hoy.get(java.util.Calendar.DAY_OF_MONTH)
 
-        return if (evento.mes == mesActual) {
-            evento.dia - diaActual
-        } else if (evento.mes == mesActual + 1) {
-            val diasRestantesMes = 30 - diaActual
-            diasRestantesMes + evento.dia
-        } else 99
+        return when {
+            evento.mes == mesActual -> evento.dia - diaActual
+            evento.mes == mesActual + 1 -> (30 - diaActual) + evento.dia
+            else -> 99
+        }
     }
 
     fun initFamilia(context: Context) {
         if (obtenerTodos(context).isEmpty()) {
-            guardarEvento(context, EventoFamiliar(
-                nombre = "Denisse",
-                relacion = "Hija",
-                dia = 21,
-                mes = 10,
-                gustos = "Chocolate, fresas y postres coloridos"
-            ))
-            guardarEvento(context, EventoFamiliar(
-                nombre = "Daniel",
-                relacion = "Hijo",
-                dia = 27,
-                mes = 02,
-                gustos = "Pizza, tacos y comida mexicana"
-            ))
-            guardarEvento(context, EventoFamiliar(
-                nombre = "Andrés",
-                relacion = "Hijo",
-                dia = 23,
-                mes = 09,
-                gustos = "Comida mexicana picante y tamales"
-            ))
+            guardarEvento(
+                context, EventoFamiliar(
+                    nombre = "Denisse",
+                    relacion = "Hija",
+                    dia = 21,
+                    mes = 10,
+                    gustos = "Chocolate, fresas y postres coloridos"
+                )
+            )
+            guardarEvento(
+                context, EventoFamiliar(
+                    nombre = "Daniel",
+                    relacion = "Hijo",
+                    dia = 27,
+                    mes = 2,
+                    gustos = "Pizza, tacos y comida mexicana"
+                )
+            )
+            guardarEvento(
+                context, EventoFamiliar(
+                    nombre = "Andrés",
+                    relacion = "Hijo",
+                    dia = 23,
+                    mes = 9,
+                    gustos = "Comida mexicana picante y tamales"
+                )
+            )
         }
     }
 }
