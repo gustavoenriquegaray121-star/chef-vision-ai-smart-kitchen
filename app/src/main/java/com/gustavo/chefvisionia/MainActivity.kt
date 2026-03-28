@@ -38,6 +38,39 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adView: AdView
     private lateinit var progressBar: ProgressBar
 
+    // ─── SEMÁFORO DE FRESCURA ─────────────────────────────────────────────────
+    private object FreshnessManager {
+        val freshnessRules = mapOf(
+            "espinaca"  to 3,  "lechuga"   to 4,
+            "tomate"    to 5,  "jitomate"  to 5,
+            "aguacate"  to 3,  "plátano"   to 4,
+            "fresa"     to 3,  "cilantro"  to 4,
+            "pollo"     to 2,  "carne"     to 2,
+            "pescado"   to 1,  "camarón"   to 1,
+            "leche"     to 3,  "crema"     to 5,
+            "zanahoria" to 7,  "pepino"    to 5,
+            "cebolla"   to 10, "ajo"       to 14,
+            "queso"     to 7,  "huevo"     to 14,
+            "papa"      to 10, "limón"     to 10,
+            "naranja"   to 7,  "manzana"   to 7,
+            "chile"     to 7,  "brócoli"   to 5
+        )
+
+        val sugerencias = mapOf(
+            "espinaca"  to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
+            "tomate"    to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
+            "jitomate"  to "¿Pico de gallo, pizza casera o salsa fresca? 🍅",
+            "aguacate"  to "¿Guacamole, tostadas o tacos con aguacate? 🥑",
+            "plátano"   to "¿Plátanos fritos, licuado o pan de plátano? 🍌",
+            "pollo"     to "¿Pollo al ajillo, caldo tlalpeño o tacos? 🍗",
+            "carne"     to "¿Bistec a la mexicana, arrachera o picadillo? 🥩",
+            "pescado"   to "¡Úsalo hoy! ¿Veracruzana o tacos de pescado? 🐟",
+            "leche"     to "¿Un licuado, arroz con leche o avena? 🥛",
+            "huevo"     to "¿Unos huevos divorciados o un omelette? 🍳",
+            "cebolla"   to "¿Sopa de cebolla o aros de cebolla crujientes? 🧅"
+        )
+    }
+
     // ─── CÁMARA ───────────────────────────────────────────────────────────────
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -60,7 +93,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         inicializarVistas()
         inicializarAdMob()
         inicializarDatos()
@@ -72,7 +104,6 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         mostrarTipPorHora()
         verificarEventoFamiliar()
-        // FIX #4: semáforo también se refresca al regresar a la pantalla
         evaluarYMostrarSemaforo()
     }
 
@@ -85,12 +116,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun inicializarVistas() {
         chipContainer = findViewById(R.id.chipContainer)
-        txtPlan      = findViewById(R.id.txtPlan)
-        txtTip       = findViewById(R.id.txtTip)
-        txtEvento    = findViewById(R.id.txtEvento)
-        btnScan      = findViewById(R.id.btnScanIngredients)
-        adView       = findViewById(R.id.adView)
-        progressBar  = findViewById(R.id.progressBar)
+        txtPlan       = findViewById(R.id.txtPlan)
+        txtTip        = findViewById(R.id.txtTip)
+        txtEvento     = findViewById(R.id.txtEvento)
+        btnScan       = findViewById(R.id.btnScanIngredients)
+        adView        = findViewById(R.id.adView)
+        progressBar   = findViewById(R.id.progressBar)
     }
 
     private fun inicializarAdMob() {
@@ -105,14 +136,10 @@ class MainActivity : AppCompatActivity() {
     private fun inicializarDatos() {
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
         EventMemoryManager.initFamilia(this)
-
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         scanCount = prefs.getInt("scan_count", 0)
-
         val guardados = MemoryManager.obtener(this)
-        if (guardados.isNotEmpty()) {
-            ingredientesDetectados.addAll(guardados)
-        }
+        if (guardados.isNotEmpty()) ingredientesDetectados.addAll(guardados)
     }
 
     private fun inicializarUI() {
@@ -120,11 +147,7 @@ class MainActivity : AppCompatActivity() {
         mostrarTipPorHora()
         verificarEventoFamiliar()
         evaluarYMostrarSemaforo()
-
-        if (ingredientesDetectados.isNotEmpty()) {
-            mostrarOpciones()
-        }
-
+        if (ingredientesDetectados.isNotEmpty()) mostrarOpciones()
         val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
         btnScan.startAnimation(pulse)
     }
@@ -138,17 +161,15 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "🚀 Modo Dev: Escaneos reseteados", Toast.LENGTH_LONG).show()
             true
         }
-
         btnScan.setOnClickListener {
             if (puedeEscanear()) abrirCamara() else mostrarUpgrade()
         }
-
         findViewById<View>(R.id.btnGoToCart).setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
         }
     }
 
-    // ─── LÓGICA DE PLAN ───────────────────────────────────────────────────────
+    // ─── PLAN ─────────────────────────────────────────────────────────────────
 
     private fun actualizarUIPlan() {
         val limite = limiteDeEscaneos()
@@ -199,13 +220,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── SEMÁFORO DE FRESCURA ─────────────────────────────────────────────────
+    // ─── SEMÁFORO ─────────────────────────────────────────────────────────────
 
     private fun evaluarYMostrarSemaforo() {
         val inventario = MemoryManager.obtener(this)
         if (inventario.isEmpty()) return
 
-        val prefs = context.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+        // FIX: usar this en lugar de context
+        val prefs = this.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
         val ahora = System.currentTimeMillis()
 
         val rojos     = mutableListOf<Pair<String, String>>()
@@ -216,13 +238,13 @@ class MainActivity : AppCompatActivity() {
             val key = ingrediente.lowercase().trim()
             val fechaCarga = prefs.getLong(key, 0L)
 
-            // FIX #3: ignorar ingredientes sin fecha registrada
+            // FIX #3: ignorar ingredientes sin fecha
             if (fechaCarga == 0L) return@forEach
 
-            val diasPasados = TimeUnit.MILLISECONDS
-                .toDays(ahora - fechaCarga).toInt()
+            // FIX: cast explícito a Int para evitar ambigüedad
+            val diasPasados = (TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)).toInt()
 
-            // FIX #2: match exacto primero, luego parcial como fallback
+            // FIX #2: match exacto primero
             val limite = FreshnessManager.freshnessRules[key]
                 ?: FreshnessManager.freshnessRules.entries
                     .find { key.contains(it.key) }?.value
@@ -232,7 +254,7 @@ class MainActivity : AppCompatActivity() {
                 diasPasados >= limite -> {
                     val sugerencia = FreshnessManager.sugerencias[key]
                         ?: FreshnessManager.sugerencias.entries
-                            .find { key.contains(it.key) }?.value
+                            .find { (k, _) -> key.contains(k) }?.value
                         ?: "¡Cocina algo rico antes de que se pierda!"
                     rojos.add(Pair(ingrediente, sugerencia))
                 }
@@ -245,31 +267,21 @@ class MainActivity : AppCompatActivity() {
 
         val sb = StringBuilder()
         sb.appendLine("📊 Estado de tu Smart Kitchen\n")
-
         if (rojos.isNotEmpty()) {
             sb.appendLine("🔴 ¡Usa HOY!: ${rojos.map { it.first }.joinToString(", ")}")
-            rojos.forEach { (_, sugerencia) ->
-                sb.appendLine("   💡 $sugerencia")
-            }
+            rojos.forEach { (_, s) -> sb.appendLine("   💡 $s") }
             sb.appendLine()
         }
-
-        if (amarillos.isNotEmpty()) {
+        if (amarillos.isNotEmpty())
             sb.appendLine("🟡 Usar pronto (2-3 días): ${amarillos.joinToString(", ")}\n")
-        }
-
-        if (verdes.isNotEmpty()) {
+        if (verdes.isNotEmpty())
             sb.appendLine("🟢 Fresco y bien: ${verdes.joinToString(", ")}\n")
-        }
-
         sb.append("🛒 Tip: Martes y jueves — frutas y verduras 20% off en Soriana")
 
         AlertDialog.Builder(this)
             .setTitle("🚨 Alerta Desperdicio Cero")
             .setMessage(sb.toString())
-            .setPositiveButton("👨‍🍳 Cocinar con esto") { _, _ ->
-                mostrarOpciones()
-            }
+            .setPositiveButton("👨‍🍳 Cocinar con esto") { _, _ -> mostrarOpciones() }
             .setNeutralButton("🛒 Agregar a lista") { _, _ ->
                 CartMemory.agregarLista(this, rojos.map { it.first })
                 startActivity(Intent(this, CartActivity::class.java))
@@ -278,11 +290,10 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ─── CÁMARA Y PROCESAMIENTO ───────────────────────────────────────────────
+    // ─── CÁMARA ───────────────────────────────────────────────────────────────
 
     private fun abrirCamara() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        cameraLauncher.launch(intent)
+        cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
     }
 
     private fun procesarImagen(bitmap: Bitmap) {
@@ -295,18 +306,16 @@ class MainActivity : AppCompatActivity() {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
-                // FIX #3 restaurado: contexto familiar para que Gemini sea empático
                 val contextoFamiliar = EventMemoryManager
                     .buscarEventoCercano(this@MainActivity)
                     ?.let {
-                        "Contexto especial: el cumpleaños de ${it.nombre} es el " +
+                        "Contexto especial: cumpleaños de ${it.nombre} el " +
                         "${it.dia}/${it.mes}. Le gusta: ${it.gustos}. " +
                         "Si es relevante, sugiere algo especial para la ocasión."
                     } ?: ""
 
                 val ingredientes = GeminiEngine.detectarIngredientes(
-                    bitmapResized,
-                    contextoFamiliar
+                    bitmapResized, contextoFamiliar
                 )
 
                 if (ingredientes.isNotEmpty()) {
@@ -314,33 +323,24 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
 
-                    // Guardar timestamp en lowercase — FIX garantizado
-                    val inventoryPrefs = getSharedPreferences(
-                        "ChefInventory", Context.MODE_PRIVATE
-                    )
-                    val editor = inventoryPrefs.edit()
+                    val editor = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE).edit()
                     ingredientes.forEach { ingr ->
                         editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
                     }
                     editor.apply()
 
                     mostrarOpciones()
-
-                    // FIX #1: semáforo se actualiza después de cada escaneo
                     evaluarYMostrarSemaforo()
-
                 } else {
                     Toast.makeText(
                         this@MainActivity,
                         "⚠️ IA no detectó ingredientes — usando modo offline",
                         Toast.LENGTH_LONG
                     ).show()
-                    if (ingredientesDetectados.isEmpty()) {
+                    if (ingredientesDetectados.isEmpty())
                         ingredientesDetectados.addAll(listOf("huevo", "cebolla", "tomate"))
-                    }
                     mostrarOpciones()
                 }
-
             } catch (e: Exception) {
                 Toast.makeText(
                     this@MainActivity,
@@ -355,25 +355,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── OPCIONES DE RECETAS ──────────────────────────────────────────────────
+    // ─── OPCIONES ─────────────────────────────────────────────────────────────
 
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
-
-        val tvDetectados = TextView(this).apply {
+        chipContainer.addView(TextView(this).apply {
             text = "🥗 Detecté: ${ingredientesDetectados.joinToString(", ")}"
             textSize = 13f
             setTextColor(Color.parseColor("#4CAF50"))
             setPadding(16, 8, 16, 16)
             gravity = Gravity.CENTER
-        }
-        chipContainer.addView(tvDetectados)
+        })
 
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
-
         if (opciones.isEmpty()) {
             chipContainer.addView(TextView(this).apply {
-                text = "😅 No encontré recetas con estos ingredientes.\nIntenta escanear de nuevo."
+                text = "😅 No encontré recetas. Intenta escanear de nuevo."
                 textSize = 14f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
@@ -389,13 +386,11 @@ class MainActivity : AppCompatActivity() {
                 textSize = 15f
                 setPadding(48, 28, 48, 28)
                 gravity = Gravity.CENTER
-
                 background = GradientDrawable().apply {
                     cornerRadius = 80f
                     setColor(Color.parseColor("#FF5722"))
                     setStroke(2, Color.parseColor("#E64A19"))
                 }
-
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -403,27 +398,23 @@ class MainActivity : AppCompatActivity() {
                     setMargins(16, 12, 16, 12)
                     gravity = Gravity.CENTER_HORIZONTAL
                 }
-
                 alpha = 0f
                 animate().alpha(1f).setDuration(400).start()
             }
-
             chip.setOnClickListener { manejarSeleccionReceta(receta) }
             chipContainer.addView(chip)
         }
     }
 
-    // ─── LÓGICA DE RECETA ─────────────────────────────────────────────────────
+    // ─── RECETA ───────────────────────────────────────────────────────────────
 
     private fun manejarSeleccionReceta(receta: String) {
         val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
-
         if (faltantes.isNotEmpty()) {
             lifecycleScope.launch {
                 try {
                     val sustitucion = GeminiEngine.sugerirSustitucion(
-                        faltantes.first(),
-                        ingredientesDetectados
+                        faltantes.first(), ingredientesDetectados
                     )
                     AlertDialog.Builder(this@MainActivity)
                         .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
@@ -453,7 +444,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // ─── OPCIONES DE ENTREGA ──────────────────────────────────────────────────
+    // ─── ENTREGA ──────────────────────────────────────────────────────────────
 
     private fun mostrarOpcionesEntrega(faltantes: List<String>) {
         val query = faltantes.joinToString("+")
@@ -466,9 +457,7 @@ class MainActivity : AppCompatActivity() {
             .setNeutralButton("🚗 Uber Eats") { _, _ ->
                 abrirApp("com.ubercab.eats", "https://www.ubereats.com/mx/search?q=$query")
             }
-            .setNegativeButton("🏪 Yo voy") { _, _ ->
-                mostrarTipTienda()
-            }
+            .setNegativeButton("🏪 Yo voy") { _, _ -> mostrarTipTienda() }
             .show()
     }
 
@@ -505,7 +494,7 @@ class MainActivity : AppCompatActivity() {
                 "Has agotado tus escaneos gratuitos de hoy.\n\n" +
                 "⭐ PREMIUM \$699/año:\n" +
                 "• 20 escaneos diarios\n" +
-                "• Todas las cocinas internacionales\n" +
+                "• Todas las cocinas\n" +
                 "• Sin anuncios\n\n" +
                 "👑 PLAN EMBAJADOR \$899/año:\n" +
                 "• Escaneos ILIMITADOS\n" +
