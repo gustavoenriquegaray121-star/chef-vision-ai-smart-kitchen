@@ -6,7 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.view.Gravity
 import android.view.View
@@ -15,13 +17,15 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
-import java.util.Calendar // Agregado para corregir error de referencia
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private var scanCount = 0
     private var userPlan = "GRATUITO"
     private val ingredientesDetectados = mutableListOf<String>()
+    private var fotoUri: Uri? = null
 
     // ─── VISTAS ───────────────────────────────────────────────────────────────
     private lateinit var chipContainer: LinearLayout
@@ -72,20 +77,49 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // ─── CÁMARA ───────────────────────────────────────────────────────────────
+    // ─── CÁMARA CON FILEPROVIDER ──────────────────────────────────────────────
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            val bitmap = result.data?.extras?.get("data") as? Bitmap
-            if (bitmap != null) {
-                procesarImagen(bitmap)
+            val uri = fotoUri
+            if (uri != null) {
+                try {
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                        android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                            decoder.setTargetSampleSize(2)
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                    }
+                    procesarImagen(bitmap)
+                } catch (e: Exception) {
+                    // Fallback a thumbnail si FileProvider falla
+                    val bitmap = result.data?.extras?.get("data") as? Bitmap
+                    if (bitmap != null) {
+                        procesarImagen(bitmap)
+                    } else {
+                        Toast.makeText(
+                            this,
+                            "⚠️ Error leyendo imagen: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
             } else {
-                Toast.makeText(
-                    this,
-                    "⚠️ No se pudo capturar la imagen. Intenta de nuevo.",
-                    Toast.LENGTH_LONG
-                ).show()
+                // Fallback thumbnail para Samsung sin FileProvider
+                val bitmap = result.data?.extras?.get("data") as? Bitmap
+                if (bitmap != null) {
+                    procesarImagen(bitmap)
+                } else {
+                    Toast.makeText(
+                        this,
+                        "⚠️ No se pudo capturar la imagen. Intenta de nuevo.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }
@@ -237,10 +271,8 @@ class MainActivity : AppCompatActivity() {
         inventario.forEach { ingrediente ->
             val key = ingrediente.lowercase().trim()
             val fechaCarga = prefs.getLong(key, 0L)
-
             if (fechaCarga == 0L) return@forEach
 
-            // Ajuste para evitar ambigüedad en Long/Int
             val diff = ahora - fechaCarga
             val diasPasados = TimeUnit.MILLISECONDS.toDays(diff).toInt()
 
@@ -292,7 +324,36 @@ class MainActivity : AppCompatActivity() {
     // ─── CÁMARA ───────────────────────────────────────────────────────────────
 
     private fun abrirCamara() {
-        cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+        try {
+            val foto = File(
+                getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                "chef_scan_${System.currentTimeMillis()}.jpg"
+            )
+            foto.parentFile?.mkdirs()
+
+            fotoUri = FileProvider.getUriForFile(
+                this,
+                "com.gustavo.chefvisionia.fileprovider",
+                foto
+            )
+
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, fotoUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+
+            if (intent.resolveActivity(packageManager) != null) {
+                cameraLauncher.launch(intent)
+            } else {
+                Toast.makeText(this, "⚠️ No se encontró app de cámara", Toast.LENGTH_SHORT).show()
+            }
+
+        } catch (e: Exception) {
+            // Fallback simple si FileProvider falla
+            fotoUri = null
+            cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+        }
     }
 
     private fun procesarImagen(bitmap: Bitmap) {
@@ -322,7 +383,9 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
 
-                    val editor = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE).edit()
+                    val editor = getSharedPreferences(
+                        "ChefInventory", Context.MODE_PRIVATE
+                    ).edit()
                     ingredientes.forEach { ingr ->
                         editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
                     }
@@ -330,6 +393,7 @@ class MainActivity : AppCompatActivity() {
 
                     mostrarOpciones()
                     evaluarYMostrarSemaforo()
+
                 } else {
                     Toast.makeText(
                         this@MainActivity,
@@ -340,6 +404,7 @@ class MainActivity : AppCompatActivity() {
                         ingredientesDetectados.addAll(listOf("huevo", "cebolla", "tomate"))
                     mostrarOpciones()
                 }
+
             } catch (e: Exception) {
                 Toast.makeText(
                     this@MainActivity,
