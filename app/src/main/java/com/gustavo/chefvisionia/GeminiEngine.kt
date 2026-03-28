@@ -15,26 +15,43 @@ object GeminiEngine {
 
     var apiKey: String = ""
 
+    // ─── CONVERSIÓN ───────────────────────────────────────────────────────────
+
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
         return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
     }
 
-    suspend fun detectarIngredientes(bitmap: Bitmap): List<String> {
+    // ─── DETECCIÓN DE INGREDIENTES ────────────────────────────────────────────
+
+    suspend fun detectarIngredientes(
+        bitmap: Bitmap,
+        contextoFamiliar: String = ""   // ← nuevo parámetro con default vacío
+    ): List<String> {
         return withContext(Dispatchers.IO) {
             try {
                 val base64Image = bitmapToBase64(bitmap)
 
+                val contextoExtra = if (contextoFamiliar.isNotEmpty())
+                    "\n\nContexto especial: $contextoFamiliar"
+                else ""
+
                 val prompt = """
+                    Eres Chef Vision IA, el asistente culinario más inteligente del mundo.
                     Analiza esta imagen y lista SOLO los ingredientes alimenticios que ves.
-                    Responde ÚNICAMENTE con una lista separada por comas.
+                    Responde ÚNICAMENTE con una lista separada por comas, en español y en minúsculas.
                     Ejemplo: huevo, tocino, cebolla, tomate
-                    No agregues explicaciones ni texto extra.
+                    No agregues explicaciones, títulos ni texto extra.$contextoExtra
                 """.trimIndent()
 
                 val respuesta = llamarGemini(base64Image, prompt)
-                respuesta.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+
+                // Limpiar y normalizar respuesta
+                respuesta
+                    .split(",")
+                    .map { it.trim().lowercase() }
+                    .filter { it.isNotEmpty() && it.length > 1 }
 
             } catch (e: Exception) {
                 emptyList()
@@ -42,35 +59,45 @@ object GeminiEngine {
         }
     }
 
+    // ─── GENERACIÓN DE RECETA ─────────────────────────────────────────────────
+
     suspend fun generarReceta(
         nombreReceta: String,
         ingredientesDisponibles: List<String>,
+        contextoFamiliar: String = "",
         idioma: String = "español"
     ): String {
         return withContext(Dispatchers.IO) {
             try {
+                val contextoExtra = if (contextoFamiliar.isNotEmpty())
+                    "\n\n💖 Contexto especial: $contextoFamiliar. " +
+                    "Si es relevante, adapta la receta o agrega un toque especial para la ocasión."
+                else ""
+
                 val prompt = """
-                    Eres Chef Vision IA, el mejor chef del mundo.
+                    Eres Chef Vision IA, el mejor chef del mundo y amigo de la familia.
                     
                     El usuario quiere preparar: $nombreReceta
-                    Ingredientes que tiene: ${ingredientesDisponibles.joinToString(", ")}
+                    Ingredientes disponibles: ${ingredientesDisponibles.joinToString(", ")}
+                    $contextoExtra
                     
-                    Responde en $idioma con:
+                    Responde en $idioma con este formato exacto:
                     
                     🍽️ RECETA: $nombreReceta
                     
-                    ⏱️ Tiempo: (minutos)
+                    ⏱️ Tiempo de preparación: (minutos)
                     
                     📦 Ingredientes necesarios:
-                    (lista)
+                    • (ingrediente 1)
+                    • (ingrediente 2)
                     
                     👨‍🍳 Pasos:
-                    1.
-                    2.
-                    3.
+                    1. (paso claro y corto)
+                    2. (paso claro y corto)
+                    3. (paso claro y corto)
                     
                     💡 Tip del Chef:
-                    (consejo profesional)
+                    (consejo profesional en 1 línea)
                     
                     🔄 Sustituciones posibles:
                     (si falta algo, qué puede usar en su lugar)
@@ -84,6 +111,8 @@ object GeminiEngine {
         }
     }
 
+    // ─── SUSTITUCIÓN INTELIGENTE ──────────────────────────────────────────────
+
     suspend fun sugerirSustitucion(
         ingredienteFaltante: String,
         ingredientesDisponibles: List<String>
@@ -91,22 +120,26 @@ object GeminiEngine {
         return withContext(Dispatchers.IO) {
             try {
                 val prompt = """
-                    Soy un chef profesional. 
-                    El usuario no tiene: $ingredienteFaltante
-                    Lo que sí tiene: ${ingredientesDisponibles.joinToString(", ")}
+                    Eres un chef profesional y práctico.
+                    El usuario NO tiene: $ingredienteFaltante
+                    Lo que SÍ tiene: ${ingredientesDisponibles.joinToString(", ")}
                     
-                    Sugiere en máximo 2 líneas qué puede usar como sustituto 
-                    y qué tan bien quedará el plato (porcentaje de sabor).
-                    Sé directo y práctico.
+                    En máximo 2 líneas directas dile:
+                    1. Qué puede usar como sustituto de lo que tiene disponible
+                    2. Qué tan bien quedará el plato (% de sabor aproximado)
+                    
+                    Sé amigable, directo y práctico.
                 """.trimIndent()
 
                 llamarGemini(null, prompt)
 
             } catch (e: Exception) {
-                "No hay sustitución disponible"
+                "Sin sustitución disponible por ahora."
             }
         }
     }
+
+    // ─── TIP DE FRESCURA ──────────────────────────────────────────────────────
 
     suspend fun generarTipFrescura(
         ingrediente: String,
@@ -119,20 +152,23 @@ object GeminiEngine {
                     En máximo 2 líneas dile:
                     1. Si debe usarlo hoy o cuántos días más aguanta
                     2. La mejor receta express para no desperdiciarlo
-                    Sé directo y amigable.
+                    Sé directo y amigable. Usa un emoji relevante.
                 """.trimIndent()
 
                 llamarGemini(null, prompt)
 
             } catch (e: Exception) {
-                "Revisa el estado de tu $ingrediente"
+                "Revisa el estado de tu $ingrediente — mejor úsalo pronto."
             }
         }
     }
 
+    // ─── LLAMADA HTTP A GEMINI ────────────────────────────────────────────────
+
     private fun llamarGemini(base64Image: String?, prompt: String): String {
         val partes = JSONArray()
 
+        // Si hay imagen, va primero
         if (base64Image != null) {
             partes.put(JSONObject().apply {
                 put("inline_data", JSONObject().apply {
@@ -142,6 +178,7 @@ object GeminiEngine {
             })
         }
 
+        // Siempre va el texto
         partes.put(JSONObject().apply {
             put("text", prompt)
         })
@@ -152,9 +189,18 @@ object GeminiEngine {
                     put("parts", partes)
                 }
             ))
+            // Configuración de seguridad y temperatura
+            put("generationConfig", JSONObject().apply {
+                put("temperature", 0.7)
+                put("maxOutputTokens", 1024)
+            })
         }
 
-        val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey")
+        val url = URL(
+            "https://generativelanguage.googleapis.com/v1beta/models/" +
+            "gemini-1.5-flash:generateContent?key=$apiKey"
+        )
+
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
@@ -168,11 +214,13 @@ object GeminiEngine {
         }
 
         val responseCode = connection.responseCode
-        val responseText = if (responseCode == 200) {
-            connection.inputStream.bufferedReader().readText()
-        } else {
-            return "❌ Error $responseCode: ${connection.errorStream?.bufferedReader()?.readText()}"
+
+        if (responseCode != 200) {
+            val errorBody = connection.errorStream?.bufferedReader()?.readText() ?: "Sin detalle"
+            return "❌ Error $responseCode: $errorBody"
         }
+
+        val responseText = connection.inputStream.bufferedReader().readText()
 
         return try {
             JSONObject(responseText)
@@ -182,8 +230,9 @@ object GeminiEngine {
                 .getJSONArray("parts")
                 .getJSONObject(0)
                 .getString("text")
+                .trim()
         } catch (e: Exception) {
-            "❌ Error procesando respuesta"
+            "❌ Error procesando respuesta de IA."
         }
     }
 }
