@@ -21,6 +21,7 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import java.util.Calendar // Agregado para corregir error de referencia
 
 class MainActivity : AppCompatActivity() {
 
@@ -209,7 +210,7 @@ class MainActivity : AppCompatActivity() {
     // ─── TIP POR HORA ─────────────────────────────────────────────────────────
 
     private fun mostrarTipPorHora() {
-        val hora = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         txtTip.text = when {
             hora < 6  -> "🌙 Madrugada — todo está tranquilo, ¿planeas el desayuno?"
             hora < 11 -> "🌅 Buenos días — ¿Qué hay en tu refri para el desayuno?"
@@ -226,7 +227,6 @@ class MainActivity : AppCompatActivity() {
         val inventario = MemoryManager.obtener(this)
         if (inventario.isEmpty()) return
 
-        // FIX: usar this en lugar de context
         val prefs = this.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
         val ahora = System.currentTimeMillis()
 
@@ -238,13 +238,12 @@ class MainActivity : AppCompatActivity() {
             val key = ingrediente.lowercase().trim()
             val fechaCarga = prefs.getLong(key, 0L)
 
-            // FIX #3: ignorar ingredientes sin fecha
             if (fechaCarga == 0L) return@forEach
 
-            // FIX: cast explícito a Int para evitar ambigüedad
-            val diasPasados = (TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga)).toInt()
+            // Ajuste para evitar ambigüedad en Long/Int
+            val diff = ahora - fechaCarga
+            val diasPasados = TimeUnit.MILLISECONDS.toDays(diff).toInt()
 
-            // FIX #2: match exacto primero
             val limite = FreshnessManager.freshnessRules[key]
                 ?: FreshnessManager.freshnessRules.entries
                     .find { key.contains(it.key) }?.value
@@ -471,7 +470,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mostrarTipTienda() {
-        val hora = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         val tip = when {
             hora < 9  -> "🌅 Ve temprano — antes de las 9am hay menos gente en Soriana"
             hora < 12 -> "☀️ Martes y jueves: frutas y verduras 20-30% off en Soriana"
