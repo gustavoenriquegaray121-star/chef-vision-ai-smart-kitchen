@@ -1,7 +1,9 @@
 package com.gustavo.chefvisionia
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -10,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.animation.AnimationUtils
@@ -77,6 +80,32 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    // ─── PERMISO CÁMARA ───────────────────────────────────────────────────────
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            abrirCamara()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("📸 Permiso de cámara necesario")
+                .setMessage(
+                    "Chef Vision IA necesita acceso a tu cámara para identificar " +
+                    "ingredientes y sugerirte recetas.\n\n" +
+                    "Por favor actívalo en Ajustes → Aplicaciones → Chef Vision IA → Permisos."
+                )
+                .setPositiveButton("Ir a Ajustes") { _, _ ->
+                    startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                    )
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+    }
+
     // ─── CÁMARA CON FILEPROVIDER ──────────────────────────────────────────────
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -86,7 +115,8 @@ class MainActivity : AppCompatActivity() {
             if (uri != null) {
                 try {
                     val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                        val source = android.graphics.ImageDecoder
+                            .createSource(contentResolver, uri)
                         android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
                             decoder.setTargetSampleSize(2)
                         }
@@ -96,7 +126,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     procesarImagen(bitmap)
                 } catch (e: Exception) {
-                    // Fallback a thumbnail si FileProvider falla
                     val bitmap = result.data?.extras?.get("data") as? Bitmap
                     if (bitmap != null) {
                         procesarImagen(bitmap)
@@ -109,7 +138,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                // Fallback thumbnail para Samsung sin FileProvider
                 val bitmap = result.data?.extras?.get("data") as? Bitmap
                 if (bitmap != null) {
                     procesarImagen(bitmap)
@@ -197,7 +225,7 @@ class MainActivity : AppCompatActivity() {
             true
         }
         btnScan.setOnClickListener {
-            if (puedeEscanear()) abrirCamara() else mostrarUpgrade()
+            if (puedeEscanear()) solicitarPermisoCamara() else mostrarUpgrade()
         }
         findViewById<View>(R.id.btnGoToCart).setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
@@ -227,6 +255,37 @@ class MainActivity : AppCompatActivity() {
             actualizarUIPlan()
             true
         } else false
+    }
+
+    // ─── PERMISOS ─────────────────────────────────────────────────────────────
+
+    private fun solicitarPermisoCamara() {
+        when {
+            checkSelfPermission(Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED -> {
+                // Ya tiene permiso — abrir directo
+                abrirCamara()
+            }
+            shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
+                // Usuario ya negó antes — explicar por qué
+                AlertDialog.Builder(this)
+                    .setTitle("📸 Necesitamos tu cámara")
+                    .setMessage(
+                        "Chef Vision IA usa la cámara para identificar los ingredientes " +
+                        "de tu refri y sugerirte recetas deliciosas.\n\n" +
+                        "Sin este permiso la app no puede escanear."
+                    )
+                    .setPositiveButton("Dar permiso") { _, _ ->
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
+            else -> {
+                // Primera vez — pedir permiso directo
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
     }
 
     // ─── EVENTOS FAMILIARES ───────────────────────────────────────────────────
@@ -346,11 +405,12 @@ class MainActivity : AppCompatActivity() {
             if (intent.resolveActivity(packageManager) != null) {
                 cameraLauncher.launch(intent)
             } else {
-                Toast.makeText(this, "⚠️ No se encontró app de cámara", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this, "⚠️ No se encontró app de cámara", Toast.LENGTH_SHORT
+                ).show()
             }
 
         } catch (e: Exception) {
-            // Fallback simple si FileProvider falla
             fotoUri = null
             cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
         }
