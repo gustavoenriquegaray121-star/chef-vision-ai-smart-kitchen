@@ -19,6 +19,7 @@ object GeminiEngine {
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
+        // Calidad 85 para balancear nitidez y peso del string
         bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
         return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
     }
@@ -27,7 +28,7 @@ object GeminiEngine {
 
     suspend fun detectarIngredientes(
         bitmap: Bitmap,
-        contextoFamiliar: String = ""   // ← nuevo parámetro con default vacío
+        contextoFamiliar: String = ""
     ): List<String> {
         return withContext(Dispatchers.IO) {
             try {
@@ -46,6 +47,8 @@ object GeminiEngine {
                 """.trimIndent()
 
                 val respuesta = llamarGemini(base64Image, prompt)
+
+                if (respuesta.startsWith("❌")) return@withContext emptyList()
 
                 // Limpiar y normalizar respuesta
                 respuesta
@@ -166,64 +169,63 @@ object GeminiEngine {
     // ─── LLAMADA HTTP A GEMINI ────────────────────────────────────────────────
 
     private fun llamarGemini(base64Image: String?, prompt: String): String {
-        val partes = JSONArray()
+        try {
+            val partsArray = JSONArray()
 
-        // Si hay imagen, va primero
-        if (base64Image != null) {
-            partes.put(JSONObject().apply {
-                put("inline_data", JSONObject().apply {
-                    put("mime_type", "image/jpeg")
-                    put("data", base64Image)
+            // 1. Agregar el Texto siempre
+            partsArray.put(JSONObject().apply {
+                put("text", prompt)
+            })
+
+            // 2. Agregar la Imagen si existe
+            if (base64Image != null) {
+                partsArray.put(JSONObject().apply {
+                    put("inline_data", JSONObject().apply {
+                        put("mime_type", "image/jpeg")
+                        put("data", base64Image)
+                    })
                 })
-            })
-        }
+            }
 
-        // Siempre va el texto
-        partes.put(JSONObject().apply {
-            put("text", prompt)
-        })
-
-        val requestBody = JSONObject().apply {
-            put("contents", JSONArray().put(
+            val contentsArray = JSONArray().put(
                 JSONObject().apply {
-                    put("parts", partes)
+                    put("parts", partsArray)
                 }
-            ))
-            // Configuración de seguridad y temperatura
-            put("generationConfig", JSONObject().apply {
-                put("temperature", 0.7)
-                put("maxOutputTokens", 1024)
-            })
-        }
+            )
 
-        val url = URL(
-            "https://generativelanguage.googleapis.com/v1beta/models/" +
-            "gemini-1.5-flash:generateContent?key=$apiKey"
-        )
+            val requestBody = JSONObject().apply {
+                put("contents", contentsArray)
+                put("generationConfig", JSONObject().apply {
+                    put("temperature", 0.7)
+                    put("maxOutputTokens", 1024)
+                })
+            }
 
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.doOutput = true
-        connection.connectTimeout = 30000
-        connection.readTimeout = 30000
+            // URL CORREGIDA para evitar Error 404
+            val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey")
 
-        OutputStreamWriter(connection.outputStream).use { writer ->
-            writer.write(requestBody.toString())
-            writer.flush()
-        }
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            connection.connectTimeout = 30000
+            connection.readTimeout = 30000
 
-        val responseCode = connection.responseCode
+            OutputStreamWriter(connection.outputStream).use { writer ->
+                writer.write(requestBody.toString())
+                writer.flush()
+            }
 
-        if (responseCode != 200) {
-            val errorBody = connection.errorStream?.bufferedReader()?.readText() ?: "Sin detalle"
-            return "❌ Error $responseCode: $errorBody"
-        }
+            val responseCode = connection.responseCode
 
-        val responseText = connection.inputStream.bufferedReader().readText()
+            if (responseCode != 200) {
+                val errorBody = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Sin detalle"
+                return "❌ Error $responseCode: $errorBody"
+            }
 
-        return try {
-            JSONObject(responseText)
+            val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+
+            return JSONObject(responseText)
                 .getJSONArray("candidates")
                 .getJSONObject(0)
                 .getJSONObject("content")
@@ -231,8 +233,9 @@ object GeminiEngine {
                 .getJSONObject(0)
                 .getString("text")
                 .trim()
+
         } catch (e: Exception) {
-            "❌ Error procesando respuesta de IA."
+            return "❌ Error: ${e.message}"
         }
     }
 }
