@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     // ─── ESTADO ───────────────────────────────────────────────────────────────
     private var scanCount = 0
     private var userPlan = "GRATUITO"
+    private var cocinaSeleccionada = "Mexicana"
     private val ingredientesDetectados = mutableListOf<String>()
     private var fotoUri: Uri? = null
 
@@ -127,27 +128,13 @@ class MainActivity : AppCompatActivity() {
                     procesarImagen(bitmap)
                 } catch (e: Exception) {
                     val bitmap = result.data?.extras?.get("data") as? Bitmap
-                    if (bitmap != null) {
-                        procesarImagen(bitmap)
-                    } else {
-                        Toast.makeText(
-                            this,
-                            "⚠️ Error leyendo imagen: ${e.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                    if (bitmap != null) procesarImagen(bitmap)
+                    else Toast.makeText(this, "⚠️ Error leyendo imagen", Toast.LENGTH_LONG).show()
                 }
             } else {
                 val bitmap = result.data?.extras?.get("data") as? Bitmap
-                if (bitmap != null) {
-                    procesarImagen(bitmap)
-                } else {
-                    Toast.makeText(
-                        this,
-                        "⚠️ No se pudo capturar la imagen. Intenta de nuevo.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                if (bitmap != null) procesarImagen(bitmap)
+                else Toast.makeText(this, "⚠️ No se pudo capturar imagen", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -161,6 +148,7 @@ class MainActivity : AppCompatActivity() {
         inicializarDatos()
         inicializarUI()
         inicializarListeners()
+        inicializarChipsCocinas()
     }
 
     override fun onResume() {
@@ -232,6 +220,100 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ─── CHIPS DE COCINAS ─────────────────────────────────────────────────────
+
+    private fun inicializarChipsCocinas() {
+        // Chips gratuitos — seleccionan cocina y activan scan
+        val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
+        val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
+        val chipsChina    = findViewById<TextView>(R.id.chipChina)
+
+        chipsMexicana.setOnClickListener {
+            seleccionarCocina("Mexicana", chipsMexicana)
+        }
+        chipsItaliana.setOnClickListener {
+            seleccionarCocina("Italiana", chipsItaliana)
+        }
+        chipsChina.setOnClickListener {
+            seleccionarCocina("China", chipsChina)
+        }
+
+        // Chips bloqueados Premium
+        listOf(
+            R.id.chipFrancesa   to "Francesa 🇫🇷",
+            R.id.chipJaponesa   to "Japonesa 🇯🇵",
+            R.id.chipEspanola   to "Española 🇪🇸",
+            R.id.chipAmericana  to "Americana 🇺🇸",
+            R.id.chipTailandesa to "Tailandesa 🇹🇭",
+            R.id.chipMediterranea to "Mediterránea 🫒"
+        ).forEach { (id, nombre) ->
+            findViewById<TextView>(id).setOnClickListener {
+                mostrarUpgradeCocina(nombre, "PREMIUM")
+            }
+        }
+
+        // Chips bloqueados Embajador
+        listOf(
+            R.id.chipVegana   to "Vegana 🥗",
+            R.id.chipFitness  to "Fitness 💪",
+            R.id.chipMaridaje to "Maridaje 🍷"
+        ).forEach { (id, nombre) ->
+            findViewById<TextView>(id).setOnClickListener {
+                mostrarUpgradeCocina(nombre, "EMBAJADOR")
+            }
+        }
+
+        // Marcar Mexicana como seleccionada por defecto
+        marcarChipSeleccionado(chipsMexicana)
+    }
+
+    private fun seleccionarCocina(cocina: String, chip: TextView) {
+        cocinaSeleccionada = cocina
+        // Resetear todos los chips gratuitos
+        listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina).forEach { id ->
+            findViewById<TextView>(id).apply {
+                setBackgroundColor(Color.parseColor("#CC4CAF50"))
+                setTextColor(Color.WHITE)
+                alpha = 0.7f
+            }
+        }
+        // Marcar el seleccionado
+        marcarChipSeleccionado(chip)
+        Toast.makeText(this, "✅ Cocina $cocina seleccionada", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun marcarChipSeleccionado(chip: TextView) {
+        chip.apply {
+            setBackgroundColor(Color.parseColor("#FF5722"))
+            setTextColor(Color.WHITE)
+            alpha = 1f
+        }
+    }
+
+    private fun mostrarUpgradeCocina(cocina: String, planRequerido: String) {
+        val (titulo, precio, beneficios) = when (planRequerido) {
+            "PREMIUM" -> Triple(
+                "⭐ $cocina — Plan Premium",
+                "\$699/año",
+                "• 20 escaneos diarios\n• 6 cocinas internacionales\n• Sin anuncios"
+            )
+            else -> Triple(
+                "👑 $cocina — Plan Embajador",
+                "\$899/año",
+                "• Escaneos ILIMITADOS\n• Todas las cocinas\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
+            )
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(titulo)
+            .setMessage("Para cocina $cocina necesitas el plan $planRequerido ($precio):\n\n$beneficios")
+            .setPositiveButton("🚀 Quiero este plan") { _, _ ->
+                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Usar gratuita", null)
+            .show()
+    }
+
     // ─── PLAN ─────────────────────────────────────────────────────────────────
 
     private fun actualizarUIPlan() {
@@ -262,18 +344,13 @@ class MainActivity : AppCompatActivity() {
     private fun solicitarPermisoCamara() {
         when {
             checkSelfPermission(Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED -> {
-                // Ya tiene permiso — abrir directo
-                abrirCamara()
-            }
+                PackageManager.PERMISSION_GRANTED -> abrirCamara()
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
-                // Usuario ya negó antes — explicar por qué
                 AlertDialog.Builder(this)
                     .setTitle("📸 Necesitamos tu cámara")
                     .setMessage(
-                        "Chef Vision IA usa la cámara para identificar los ingredientes " +
-                        "de tu refri y sugerirte recetas deliciosas.\n\n" +
-                        "Sin este permiso la app no puede escanear."
+                        "Chef Vision IA usa la cámara para identificar ingredientes " +
+                        "de tu refri y sugerirte recetas deliciosas."
                     )
                     .setPositiveButton("Dar permiso") { _, _ ->
                         permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -281,10 +358,7 @@ class MainActivity : AppCompatActivity() {
                     .setNegativeButton("Cancelar", null)
                     .show()
             }
-            else -> {
-                // Primera vez — pedir permiso directo
-                permissionLauncher.launch(Manifest.permission.CAMERA)
-            }
+            else -> permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -405,9 +479,7 @@ class MainActivity : AppCompatActivity() {
             if (intent.resolveActivity(packageManager) != null) {
                 cameraLauncher.launch(intent)
             } else {
-                Toast.makeText(
-                    this, "⚠️ No se encontró app de cámara", Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "⚠️ No se encontró app de cámara", Toast.LENGTH_SHORT).show()
             }
 
         } catch (e: Exception) {
@@ -426,13 +498,15 @@ class MainActivity : AppCompatActivity() {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
-                val contextoFamiliar = EventMemoryManager
-                    .buscarEventoCercano(this@MainActivity)
-                    ?.let {
-                        "Contexto especial: cumpleaños de ${it.nombre} el " +
-                        "${it.dia}/${it.mes}. Le gusta: ${it.gustos}. " +
-                        "Si es relevante, sugiere algo especial para la ocasión."
-                    } ?: ""
+                // Incluir cocina seleccionada en el contexto de Gemini
+                val contextoFamiliar = buildString {
+                    append("Cocina seleccionada: $cocinaSeleccionada. ")
+                    append("Sugiere recetas específicas de cocina $cocinaSeleccionada. ")
+                    EventMemoryManager.buscarEventoCercano(this@MainActivity)?.let {
+                        append("Contexto familiar: cumpleaños de ${it.nombre} el ")
+                        append("${it.dia}/${it.mes}. Le gusta: ${it.gustos}.")
+                    }
+                }
 
                 val ingredientes = GeminiEngine.detectarIngredientes(
                     bitmapResized, contextoFamiliar
@@ -564,6 +638,7 @@ class MainActivity : AppCompatActivity() {
     private fun abrirReceta(receta: String) {
         startActivity(Intent(this, RecipeActivity::class.java).apply {
             putExtra("RECETA", receta)
+            putExtra("COCINA", cocinaSeleccionada)
             putStringArrayListExtra("INGREDIENTES", ArrayList(ingredientesDetectados))
         })
     }
@@ -618,15 +693,14 @@ class MainActivity : AppCompatActivity() {
                 "Has agotado tus escaneos gratuitos de hoy.\n\n" +
                 "⭐ PREMIUM \$699/año:\n" +
                 "• 20 escaneos diarios\n" +
-                "• Todas las cocinas\n" +
+                "• 6 cocinas internacionales\n" +
                 "• Sin anuncios\n\n" +
                 "👑 PLAN EMBAJADOR \$899/año:\n" +
                 "• Escaneos ILIMITADOS\n" +
                 "• Memoria familiar 💖\n" +
                 "• Recordatorios de cumpleaños\n" +
                 "• Fitness, Vegano y Maridaje\n" +
-                "• Integración Rappi / Uber Eats\n" +
-                "• Notificaciones Zero Waste"
+                "• Integración Rappi / Uber Eats"
             )
             .setPositiveButton("👑 Plan Embajador") { _, _ ->
                 Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
