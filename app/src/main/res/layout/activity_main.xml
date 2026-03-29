@@ -3,113 +3,93 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#121212">
 
-    <!-- FONDO COCINA -->
     <ImageView
         android:id="@+id/imgBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:src="@drawable/kitchen_bg"
         android:scaleType="centerCrop"
-        android:alpha="0.55"
+        android:alpha="0.4"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
-    <!-- OVERLAY -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#88000000"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        android:background="#99000000" />
 
-    <!-- LOGO MEJORADO -->
     <TextView
         android:id="@+id/txtLogo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Chef Vision IA"
-        android:textSize="42sp"
-        android:textColor="#FF5722"
+        android:textSize="34sp"
+        android:textColor="#FFFFFF"
         android:textStyle="bold"
-        android:fontFamily="sans-serif-black"
-        android:letterSpacing="0.05"
-        android:shadowColor="#000000"
-        android:shadowDx="2"
-        android:shadowDy="2"
-        android:shadowRadius="4"
-        android:layout_marginTop="40dp"
+        android:fontFamily="sans-serif-thin"
+        android:letterSpacing="0.1"
+        android:layout_marginTop="30dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <TextView
-        android:id="@+id/txtSubtitle"
+        android:id="@+id/txtPlan"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Smart Kitchen System"
-        android:textSize="13sp"
-        android:textColor="#DDDDDD"
-        android:layout_marginTop="2dp"
+        android:text="PLAN: GRATUITO | ESCANEOS: 0/3"
+        android:textSize="11sp"
+        android:textColor="#4CAF50"
+        android:letterSpacing="0.2"
+        android:layout_marginTop="4dp"
         app:layout_constraintTop_toBottomOf="@id/txtLogo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- PLAN -->
-    <TextView
-        android:id="@+id/txtPlan"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Plan: GRATUITO | Escaneos: 0/3"
-        android:textSize="13sp"
-        android:textColor="#4CAF50"
-        android:textStyle="bold"
-        android:layout_marginTop="6dp"
-        app:layout_constraintTop_toBottomOf="@id/txtSubtitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- EVENTO FAMILIAR -->
-    <TextView
-        android:id="@+id/txtEvento"
+    <LinearLayout
+        android:id="@+id/infoPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="6dp"
-        android:padding="10dp"
-        android:textColor="#FFD700"
-        android:textSize="13sp"
-        android:gravity="center"
-        android:background="#33FFD700"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/txtPlan"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:orientation="vertical"
+        android:layout_marginTop="15dp"
+        app:layout_constraintTop_toBottomOf="@id/txtPlan">
 
-    <!-- TIP POR HORA -->
-    <TextView
-        android:id="@+id/txtTip"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="6dp"
-        android:textColor="#EEEEEE"
-        android:textSize="12sp"
-        android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@id/txtEvento"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        <TextView
+            android:id="@+id/txtTip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="30dp"
+            android:textColor="#BBBBBB"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center"
+            android:text="🌅 ¿Qué hay en tu refri para el desayuno?"/>
 
-    <!-- SCROLL: CHIPS DE COCINAS + RECETAS -->
+        <TextView
+            android:id="@+id/txtEvento"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="40dp"
+            android:layout_marginTop="8dp"
+            android:padding="8dp"
+            android:textColor="#FFD700"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:background="@drawable/event_border"
+            android:visibility="gone"/>
+    </LinearLayout>
+
     <ScrollView
         android:id="@+id/scrollRecetas"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginHorizontal="12dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="10dp"
         android:scrollbars="none"
-        app:layout_constraintTop_toBottomOf="@id/txtTip"
+        app:layout_constraintTop_toBottomOf="@id/infoPanel"
         app:layout_constraintBottom_toTopOf="@id/progressBar">
 
         <LinearLayout
@@ -117,288 +97,194 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- COCINAS GRATUITAS -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🆓 Cocinas gratuitas"
-                android:textColor="#AAAAAA"
-                android:textSize="11sp"
+                android:text="COCINAS DISPONIBLES"
+                android:textColor="#66FFFFFF"
+                android:textSize="10sp"
+                android:letterSpacing="0.1"
                 android:layout_marginStart="8dp"
-                android:layout_marginBottom="4dp"/>
+                android:layout_marginBottom="10dp"/>
 
             <LinearLayout
                 android:id="@+id/layoutCocinasFree"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="8dp">
+                android:gravity="center">
 
-                <!-- MEXICANA -->
                 <TextView
                     android:id="@+id/chipMexicana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="80dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
-                    android:text="🇲🇽 Mexicana"
+                    android:text="🌮\nMexicana"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#CC4CAF50"
-                    android:padding="8dp"/>
+                    android:background="@drawable/glass_chip_free"
+                    android:lineSpacingExtra="4dp"/>
 
-                <!-- ITALIANA -->
                 <TextView
                     android:id="@+id/chipItaliana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="80dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
-                    android:text="🇮🇹 Italiana"
+                    android:text="🍝\nItaliana"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#CC4CAF50"
-                    android:padding="8dp"/>
+                    android:background="@drawable/glass_chip_free"
+                    android:lineSpacingExtra="4dp"/>
 
-                <!-- CHINA -->
                 <TextView
                     android:id="@+id/chipChina"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="80dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
-                    android:text="🇨🇳 China"
+                    android:text="🥢\nChina"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#CC4CAF50"
-                    android:padding="8dp"/>
-
+                    android:background="@drawable/glass_chip_free"
+                    android:lineSpacingExtra="4dp"/>
             </LinearLayout>
 
-            <!-- COCINAS PREMIUM -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⭐ Premium — $699/año"
-                android:textColor="#AAAAAA"
-                android:textSize="11sp"
+                android:text="EXPERIENCIA PREMIUM ⭐"
+                android:textColor="#66FFFFFF"
+                android:textSize="10sp"
+                android:layout_marginTop="16dp"
                 android:layout_marginStart="8dp"
-                android:layout_marginBottom="4dp"/>
+                android:layout_marginBottom="8dp"/>
 
-            <LinearLayout
+            <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="8dp">
+                android:columnCount="3"
+                android:alignmentMode="alignMargins">
 
-                <TextView
-                    android:id="@+id/chipFrancesa"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    android:text="🇫🇷 Francesa 🔒"
-                    android:textColor="#AAAAAA"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:background="#882196F3"
-                    android:padding="8dp"/>
+                <TextView android:id="@+id/chipFrancesa" style="@style/PremiumChipStyle" android:text="🥐\nFrancesa"/>
+                <TextView android:id="@+id/chipJaponesa" style="@style/PremiumChipStyle" android:text="🍣\nJaponesa"/>
+                <TextView android:id="@+id/chipEspanola" style="@style/PremiumChipStyle" android:text="🥘\nEspañola"/>
+                <TextView android:id="@+id/chipAmericana" style="@style/PremiumChipStyle" android:text="🍔\nAmericana"/>
+                <TextView android:id="@+id/chipTailandesa" style="@style/PremiumChipStyle" android:text="🍲\nTailandesa"/>
+                <TextView android:id="@+id/chipMediterranea" style="@style/PremiumChipStyle" android:text="🫒\nMediterránea"/>
+            </GridLayout>
 
-                <TextView
-                    android:id="@+id/chipJaponesa"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    android:text="🇯🇵 Japonesa 🔒"
-                    android:textColor="#AAAAAA"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:background="#882196F3"
-                    android:padding="8dp"/>
-
-                <TextView
-                    android:id="@+id/chipEspanola"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    android:text="🇪🇸 Española 🔒"
-                    android:textColor="#AAAAAA"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:background="#882196F3"
-                    android:padding="8dp"/>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/chipAmericana"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    android:text="🇺🇸 Americana 🔒"
-                    android:textColor="#AAAAAA"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:background="#882196F3"
-                    android:padding="8dp"/>
-
-                <TextView
-                    android:id="@+id/chipTailandesa"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    android:text="🇹🇭 Tailandesa 🔒"
-                    android:textColor="#AAAAAA"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:background="#882196F3"
-                    android:padding="8dp"/>
-
-                <TextView
-                    android:id="@+id/chipMediterranea"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    android:text="🫒 Mediterránea 🔒"
-                    android:textColor="#AAAAAA"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:background="#882196F3"
-                    android:padding="8dp"/>
-
-            </LinearLayout>
-
-            <!-- PLAN EMBAJADOR -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="👑 Plan Embajador — $899/año"
-                android:textColor="#AAAAAA"
-                android:textSize="11sp"
+                android:text="NIVEL EMBAJADOR 👑"
+                android:textColor="#66FFFFFF"
+                android:textSize="10sp"
+                android:layout_marginTop="16dp"
                 android:layout_marginStart="8dp"
-                android:layout_marginBottom="4dp"/>
+                android:layout_marginBottom="8dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="8dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/chipVegana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="60dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
-                    android:text="🥗 Vegana 🔒"
-                    android:textColor="#AAAAAA"
+                    android:text="🥗 Vegana"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#88FFD700"
-                    android:padding="8dp"/>
+                    android:background="@drawable/ambassador_chip_gold"/>
 
                 <TextView
                     android:id="@+id/chipFitness"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="60dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
-                    android:text="💪 Fitness 🔒"
-                    android:textColor="#AAAAAA"
+                    android:text="💪 Fitness"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#88FFD700"
-                    android:padding="8dp"/>
+                    android:background="@drawable/ambassador_chip_gold"/>
 
                 <TextView
                     android:id="@+id/chipMaridaje"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="60dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
-                    android:text="🍷 Maridaje 🔒"
-                    android:textColor="#AAAAAA"
+                    android:text="🍷 Maridaje"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#88FFD700"
-                    android:padding="8dp"/>
-
+                    android:background="@drawable/ambassador_chip_gold"/>
             </LinearLayout>
 
-            <!-- RECETAS DETECTADAS (se llena dinámicamente desde Kotlin) -->
             <LinearLayout
                 android:id="@+id/chipContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center"
-                android:layout_marginTop="8dp"/>
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="100dp"/>
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- PROGRESS BAR -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginBottom="12dp"
         android:visibility="gone"
         android:indeterminateTint="#FF5722"
         app:layout_constraintBottom_toTopOf="@id/btnScanIngredients"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="10dp"/>
 
-    <!-- BOTÓN SCAN CIRCULAR -->
     <Button
         android:id="@+id/btnScanIngredients"
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        android:text="📸 SCAN"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:text="SCAN"
         android:textColor="#FFFFFF"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:textStyle="bold"
-        android:background="@drawable/circle_scan"
-        android:elevation="12dp"
-        android:layout_marginBottom="72dp"
+        android:background="@drawable/circle_scan_gourmet"
+        android:elevation="10dp"
+        android:layout_marginBottom="25dp"
         app:layout_constraintBottom_toTopOf="@id/btnGoToCart"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- BOTÓN CARRITO -->
     <Button
         android:id="@+id/btnGoToCart"
         android:layout_width="wrap_content"
-        android:layout_height="52dp"
-        android:text="🛒 Mi Lista de Compras"
+        android:layout_height="48dp"
+        android:text="🛒 LISTA DE COMPRAS"
         android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:paddingHorizontal="32dp"
-        android:background="@drawable/button_green"
-        android:layout_marginBottom="12dp"
+        android:textSize="12sp"
+        android:letterSpacing="0.1"
+        android:paddingHorizontal="30dp"
+        android:background="@drawable/btn_dark_green"
+        android:layout_marginBottom="15dp"
         app:layout_constraintBottom_toTopOf="@id/adView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- ADMOB -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/adView"
         android:layout_width="match_parent"
@@ -410,3 +296,4 @@
         app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+            
