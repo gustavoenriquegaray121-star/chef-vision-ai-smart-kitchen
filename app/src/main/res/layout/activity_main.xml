@@ -3,9 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#121212">
 
-    <!-- FONDO COCINA -->
     <ImageView
         android:id="@+id/imgBackground"
         android:layout_width="match_parent"
@@ -16,15 +16,13 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
-    <!-- OVERLAY -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#88000000"
+        android:background="#99000000"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
-    <!-- LOGO MEJORADO -->
     <TextView
         android:id="@+id/txtLogo"
         android:layout_width="wrap_content"
@@ -56,7 +54,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- PLAN -->
     <TextView
         android:id="@+id/txtPlan"
         android:layout_width="wrap_content"
@@ -70,7 +67,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- EVENTO FAMILIAR -->
     <TextView
         android:id="@+id/txtEvento"
         android:layout_width="match_parent"
@@ -87,7 +83,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- TIP POR HORA -->
     <TextView
         android:id="@+id/txtTip"
         android:layout_width="match_parent"
@@ -101,7 +96,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- SCROLL: CHIPS DE COCINAS + RECETAS -->
     <ScrollView
         android:id="@+id/scrollRecetas"
         android:layout_width="match_parent"
@@ -117,7 +111,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- COCINAS GRATUITAS -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -135,51 +128,47 @@
                 android:gravity="center"
                 android:layout_marginBottom="8dp">
 
-                <!-- MEXICANA -->
                 <TextView
                     android:id="@+id/chipMexicana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇲🇽 Mexicana"
                     android:textColor="#FFFFFF"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:background="#CC4CAF50"
+                    android:background="@drawable/glass_chip_free"
                     android:padding="8dp"/>
 
-                <!-- ITALIANA -->
                 <TextView
                     android:id="@+id/chipItaliana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇮🇹 Italiana"
                     android:textColor="#FFFFFF"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:background="#CC4CAF50"
+                    android:background="@drawable/glass_chip_free"
                     android:padding="8dp"/>
 
-                <!-- CHINA -->
                 <TextView
                     android:id="@+id/chipChina"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇨🇳 China"
                     android:textColor="#FFFFFF"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:background="#CC4CAF50"
+                    android:background="@drawable/glass_chip_free"
                     android:padding="8dp"/>
 
             </LinearLayout>
 
-            <!-- COCINAS PREMIUM -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -199,40 +188,40 @@
                 <TextView
                     android:id="@+id/chipFrancesa"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇫🇷 Francesa 🔒"
                     android:textColor="#AAAAAA"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#882196F3"
+                    android:background="@drawable/glass_chip_premium"
                     android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/chipJaponesa"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇯🇵 Japonesa 🔒"
                     android:textColor="#AAAAAA"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#882196F3"
+                    android:background="@drawable/glass_chip_premium"
                     android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/chipEspanola"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇪🇸 Española 🔒"
                     android:textColor="#AAAAAA"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#882196F3"
+                    android:background="@drawable/glass_chip_premium"
                     android:padding="8dp"/>
 
             </LinearLayout>
@@ -247,45 +236,44 @@
                 <TextView
                     android:id="@+id/chipAmericana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇺🇸 Americana 🔒"
                     android:textColor="#AAAAAA"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#882196F3"
+                    android:background="@drawable/glass_chip_premium"
                     android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/chipTailandesa"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🇹🇭 Tailandesa 🔒"
                     android:textColor="#AAAAAA"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#882196F3"
+                    android:background="@drawable/glass_chip_premium"
                     android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/chipMediterranea"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🫒 Mediterránea 🔒"
                     android:textColor="#AAAAAA"
                     android:textSize="11sp"
                     android:gravity="center"
-                    android:background="#882196F3"
+                    android:background="@drawable/glass_chip_premium"
                     android:padding="8dp"/>
 
             </LinearLayout>
 
-            <!-- PLAN EMBAJADOR -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -305,45 +293,47 @@
                 <TextView
                     android:id="@+id/chipVegana"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🥗 Vegana 🔒"
-                    android:textColor="#AAAAAA"
+                    android:textColor="#000000"
                     android:textSize="11sp"
+                    android:textStyle="bold"
                     android:gravity="center"
-                    android:background="#88FFD700"
+                    android:background="#FFD700"
                     android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/chipFitness"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="💪 Fitness 🔒"
-                    android:textColor="#AAAAAA"
+                    android:textColor="#000000"
                     android:textSize="11sp"
+                    android:textStyle="bold"
                     android:gravity="center"
-                    android:background="#88FFD700"
+                    android:background="#FFD700"
                     android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/chipMaridaje"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_margin="4dp"
                     android:text="🍷 Maridaje 🔒"
-                    android:textColor="#AAAAAA"
+                    android:textColor="#000000"
                     android:textSize="11sp"
+                    android:textStyle="bold"
                     android:gravity="center"
-                    android:background="#88FFD700"
+                    android:background="#FFD700"
                     android:padding="8dp"/>
 
             </LinearLayout>
 
-            <!-- RECETAS DETECTADAS (se llena dinámicamente desde Kotlin) -->
             <LinearLayout
                 android:id="@+id/chipContainer"
                 android:layout_width="match_parent"
@@ -355,7 +345,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- PROGRESS BAR -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="40dp"
@@ -367,7 +356,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- BOTÓN SCAN CIRCULAR -->
     <Button
         android:id="@+id/btnScanIngredients"
         android:layout_width="140dp"
@@ -376,14 +364,13 @@
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:background="@drawable/circle_scan"
+        android:background="@drawable/circle_scan_gourmet"
         android:elevation="12dp"
         android:layout_marginBottom="72dp"
         app:layout_constraintBottom_toTopOf="@id/btnGoToCart"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- BOTÓN CARRITO -->
     <Button
         android:id="@+id/btnGoToCart"
         android:layout_width="wrap_content"
@@ -392,13 +379,12 @@
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:paddingHorizontal="32dp"
-        android:background="@drawable/button_green"
+        android:background="@drawable/btn_dark_green"
         android:layout_marginBottom="12dp"
         app:layout_constraintBottom_toTopOf="@id/adView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- ADMOB -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/adView"
         android:layout_width="match_parent"
