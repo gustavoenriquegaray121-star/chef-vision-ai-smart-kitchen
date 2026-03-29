@@ -107,12 +107,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── CÁMARA CON FILEPROVIDER ──────────────────────────────────────────────
+    // ─── FIX CÁMARA: sin resolveActivity que bloquea en Android 11+ ──────────
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val uri = fotoUri
+
+            // Intento 1: leer desde URI FileProvider
             if (uri != null) {
                 try {
                     val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -126,16 +128,25 @@ class MainActivity : AppCompatActivity() {
                         MediaStore.Images.Media.getBitmap(contentResolver, uri)
                     }
                     procesarImagen(bitmap)
+                    return@registerForActivityResult
                 } catch (e: Exception) {
-                    val bitmap = result.data?.extras?.get("data") as? Bitmap
-                    if (bitmap != null) procesarImagen(bitmap)
-                    else Toast.makeText(this, "⚠️ Error leyendo imagen", Toast.LENGTH_LONG).show()
+                    // URI falló — caer al thumbnail
                 }
-            } else {
-                val bitmap = result.data?.extras?.get("data") as? Bitmap
-                if (bitmap != null) procesarImagen(bitmap)
-                else Toast.makeText(this, "⚠️ No se pudo capturar imagen", Toast.LENGTH_LONG).show()
             }
+
+            // Intento 2: thumbnail del intent
+            val thumbnail = result.data?.extras?.get("data") as? Bitmap
+            if (thumbnail != null) {
+                procesarImagen(thumbnail)
+                return@registerForActivityResult
+            }
+
+            // Nada funcionó
+            Toast.makeText(
+                this,
+                "⚠️ No se pudo leer la imagen. Intenta de nuevo.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -441,7 +452,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ─── CÁMARA ───────────────────────────────────────────────────────────────
+    // ─── CÁMARA FIX ───────────────────────────────────────────────────────────
 
     private fun abrirCamara() {
         try {
@@ -463,11 +474,8 @@ class MainActivity : AppCompatActivity() {
                 addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             }
 
-            if (intent.resolveActivity(packageManager) != null) {
-                cameraLauncher.launch(intent)
-            } else {
-                Toast.makeText(this, "⚠️ No se encontró app de cámara", Toast.LENGTH_SHORT).show()
-            }
+            // FIX: No usar resolveActivity — bloquea silenciosamente en Android 11+
+            cameraLauncher.launch(intent)
 
         } catch (e: Exception) {
             fotoUri = null
@@ -476,6 +484,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── PROCESAR IMAGEN ──────────────────────────────────────────────────────
+
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
@@ -516,7 +525,6 @@ class MainActivity : AppCompatActivity() {
                     evaluarYMostrarSemaforo()
 
                 } else {
-                    // Diagnóstico visible en pantalla
                     val apiVacia = BuildConfig.GEMINI_API_KEY.isEmpty()
                     val keyPreview = if (!apiVacia)
                         BuildConfig.GEMINI_API_KEY.take(8) + "..."
