@@ -223,28 +223,20 @@ class MainActivity : AppCompatActivity() {
     // ─── CHIPS DE COCINAS ─────────────────────────────────────────────────────
 
     private fun inicializarChipsCocinas() {
-        // Chips gratuitos — seleccionan cocina y activan scan
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
         val chipsChina    = findViewById<TextView>(R.id.chipChina)
 
-        chipsMexicana.setOnClickListener {
-            seleccionarCocina("Mexicana", chipsMexicana)
-        }
-        chipsItaliana.setOnClickListener {
-            seleccionarCocina("Italiana", chipsItaliana)
-        }
-        chipsChina.setOnClickListener {
-            seleccionarCocina("China", chipsChina)
-        }
+        chipsMexicana.setOnClickListener { seleccionarCocina("Mexicana", chipsMexicana) }
+        chipsItaliana.setOnClickListener { seleccionarCocina("Italiana", chipsItaliana) }
+        chipsChina.setOnClickListener    { seleccionarCocina("China", chipsChina) }
 
-        // Chips bloqueados Premium
         listOf(
-            R.id.chipFrancesa   to "Francesa 🇫🇷",
-            R.id.chipJaponesa   to "Japonesa 🇯🇵",
-            R.id.chipEspanola   to "Española 🇪🇸",
-            R.id.chipAmericana  to "Americana 🇺🇸",
-            R.id.chipTailandesa to "Tailandesa 🇹🇭",
+            R.id.chipFrancesa    to "Francesa 🇫🇷",
+            R.id.chipJaponesa    to "Japonesa 🇯🇵",
+            R.id.chipEspanola    to "Española 🇪🇸",
+            R.id.chipAmericana   to "Americana 🇺🇸",
+            R.id.chipTailandesa  to "Tailandesa 🇹🇭",
             R.id.chipMediterranea to "Mediterránea 🫒"
         ).forEach { (id, nombre) ->
             findViewById<TextView>(id).setOnClickListener {
@@ -252,7 +244,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Chips bloqueados Embajador
         listOf(
             R.id.chipVegana   to "Vegana 🥗",
             R.id.chipFitness  to "Fitness 💪",
@@ -263,13 +254,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Marcar Mexicana como seleccionada por defecto
         marcarChipSeleccionado(chipsMexicana)
     }
 
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
-        // Resetear todos los chips gratuitos
         listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina).forEach { id ->
             findViewById<TextView>(id).apply {
                 setBackgroundColor(Color.parseColor("#CC4CAF50"))
@@ -277,7 +266,6 @@ class MainActivity : AppCompatActivity() {
                 alpha = 0.7f
             }
         }
-        // Marcar el seleccionado
         marcarChipSeleccionado(chip)
         Toast.makeText(this, "✅ Cocina $cocina seleccionada", Toast.LENGTH_SHORT).show()
     }
@@ -303,7 +291,6 @@ class MainActivity : AppCompatActivity() {
                 "• Escaneos ILIMITADOS\n• Todas las cocinas\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
             )
         }
-
         AlertDialog.Builder(this)
             .setTitle(titulo)
             .setMessage("Para cocina $cocina necesitas el plan $planRequerido ($precio):\n\n$beneficios")
@@ -488,6 +475,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ─── BUG 1 FIX: Sin ingredientes falsos ───────────────────────────────────
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
@@ -498,7 +486,6 @@ class MainActivity : AppCompatActivity() {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
-                // Incluir cocina seleccionada en el contexto de Gemini
                 val contextoFamiliar = buildString {
                     append("Cocina seleccionada: $cocinaSeleccionada. ")
                     append("Sugiere recetas específicas de cocina $cocinaSeleccionada. ")
@@ -529,14 +516,18 @@ class MainActivity : AppCompatActivity() {
                     evaluarYMostrarSemaforo()
 
                 } else {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "⚠️ IA no detectó ingredientes — usando modo offline",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    if (ingredientesDetectados.isEmpty())
-                        ingredientesDetectados.addAll(listOf("huevo", "cebolla", "tomate"))
-                    mostrarOpciones()
+                    // Sin ingredientes falsos — mensaje honesto
+                    chipContainer.addView(TextView(this@MainActivity).apply {
+                        text = "🔍 No detecté ingredientes en esta imagen.\n\n" +
+                               "Intenta:\n" +
+                               "• Acercar más la cámara a los alimentos\n" +
+                               "• Mejor iluminación\n" +
+                               "• Apuntar directo a los ingredientes"
+                        textSize = 14f
+                        setTextColor(Color.parseColor("#EEEEEE"))
+                        gravity = Gravity.CENTER
+                        setPadding(24, 32, 24, 32)
+                    })
                 }
 
             } catch (e: Exception) {
@@ -568,7 +559,7 @@ class MainActivity : AppCompatActivity() {
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
         if (opciones.isEmpty()) {
             chipContainer.addView(TextView(this).apply {
-                text = "😅 No encontré recetas. Intenta escanear de nuevo."
+                text = "😅 No encontré recetas con estos ingredientes.\nIntenta escanear de nuevo."
                 textSize = 14f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
@@ -604,32 +595,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── RECETA ───────────────────────────────────────────────────────────────
-
+    // ─── BUG 2 FIX: Diálogo primero, Gemini después ───────────────────────────
     private fun manejarSeleccionReceta(receta: String) {
         val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
+
         if (faltantes.isNotEmpty()) {
-            lifecycleScope.launch {
-                try {
-                    val sustitucion = GeminiEngine.sugerirSustitucion(
-                        faltantes.first(), ingredientesDetectados
-                    )
-                    AlertDialog.Builder(this@MainActivity)
-                        .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
-                        .setMessage("$sustitucion\n\n¿Qué deseas hacer?")
-                        .setPositiveButton("🛒 Agregar al carrito") { _, _ ->
-                            CartMemory.agregarLista(this@MainActivity, faltantes)
-                            mostrarOpcionesEntrega(faltantes)
-                        }
-                        .setNeutralButton("👨‍🍳 Cocinar con lo que tengo") { _, _ ->
-                            abrirReceta(receta)
-                        }
-                        .setNegativeButton("❌ Cancelar", null)
-                        .show()
-                } catch (e: Exception) {
+            AlertDialog.Builder(this)
+                .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
+                .setMessage(
+                    "Para '$receta' te falta: ${faltantes.joinToString(", ")}.\n\n" +
+                    "¿Qué deseas hacer?"
+                )
+                .setPositiveButton("🛒 Agregar al carrito") { _, _ ->
+                    CartMemory.agregarLista(this, faltantes)
+                    mostrarOpcionesEntrega(faltantes)
+                }
+                .setNeutralButton("👨‍🍳 Cocinar con lo que tengo") { _, _ ->
                     abrirReceta(receta)
                 }
-            }
+                .setNegativeButton("❌ Cancelar", null)
+                .show()
         } else {
             abrirReceta(receta)
         }
