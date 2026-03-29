@@ -2,6 +2,7 @@ package com.gustavo.chefvisionia
 
 import android.graphics.Bitmap
 import android.util.Base64
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -14,12 +15,13 @@ import java.net.URL
 object GeminiEngine {
 
     var apiKey: String = ""
+    private const val TAG = "GEMINI_DEBUG"
 
-    // ─── MODELOS DISPONIBLES (fallback automático) ────────────────────────────
+    // ─── MODELOS — orden actualizado ──────────────────────────────────────────
     private val modelos = listOf(
+        "gemini-2.0-flash-lite",
         "gemini-2.0-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro-latest"
+        "gemini-1.5-flash-latest"
     )
 
     // ─── CONVERSIÓN ───────────────────────────────────────────────────────────
@@ -38,7 +40,13 @@ object GeminiEngine {
     ): List<String> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "=== INICIO DETECCIÓN ===")
+                Log.d(TAG, "API Key vacía: ${apiKey.isEmpty()}")
+                Log.d(TAG, "API Key longitud: ${apiKey.length}")
+                Log.d(TAG, "Contexto: $contextoFamiliar")
+
                 val base64Image = bitmapToBase64(bitmap)
+                Log.d(TAG, "Imagen convertida a base64 OK — tamaño: ${base64Image.length} chars")
 
                 val contextoExtra = if (contextoFamiliar.isNotEmpty())
                     "\n\nContexto especial: $contextoFamiliar"
@@ -55,17 +63,24 @@ object GeminiEngine {
 
                 val respuesta = llamarGeminiConFallback(base64Image, prompt)
 
+                Log.d(TAG, "Respuesta raw: $respuesta")
+
                 if (respuesta.startsWith("❌") ||
                     respuesta.contains("NINGUNO", ignoreCase = true)) {
+                    Log.d(TAG, "Respuesta vacía o NINGUNO — lista vacía")
                     return@withContext emptyList()
                 }
 
-                respuesta
+                val ingredientes = respuesta
                     .split(",")
                     .map { it.trim().lowercase() }
                     .filter { it.isNotEmpty() && it.length > 1 }
 
+                Log.d(TAG, "Ingredientes detectados: $ingredientes")
+                ingredientes
+
             } catch (e: Exception) {
+                Log.e(TAG, "EXCEPCIÓN en detectarIngredientes: ${e.message}", e)
                 emptyList()
             }
         }
@@ -176,12 +191,16 @@ object GeminiEngine {
     private fun llamarGeminiConFallback(base64Image: String?, prompt: String): String {
         var ultimoError = ""
         for (modelo in modelos) {
+            Log.d(TAG, "Intentando modelo: $modelo")
             val resultado = llamarGemini(base64Image, prompt, modelo)
+            Log.d(TAG, "Resultado [$modelo]: ${resultado.take(200)}")
             if (!resultado.startsWith("❌")) {
+                Log.d(TAG, "✅ Modelo exitoso: $modelo")
                 return resultado
             }
             ultimoError = resultado
         }
+        Log.e(TAG, "❌ Todos los modelos fallaron. Último error: $ultimoError")
         return ultimoError
     }
 
@@ -195,12 +214,10 @@ object GeminiEngine {
         return try {
             val partsArray = JSONArray()
 
-            // Texto siempre primero
             partsArray.put(JSONObject().apply {
                 put("text", prompt)
             })
 
-            // Imagen si existe
             if (base64Image != null) {
                 partsArray.put(JSONObject().apply {
                     put("inline_data", JSONObject().apply {
@@ -222,11 +239,12 @@ object GeminiEngine {
                 })
             }
 
-            val url = URL(
-                "https://generativelanguage.googleapis.com/v1beta/models/" +
+            val urlStr = "https://generativelanguage.googleapis.com/v1beta/models/" +
                 "$modelo:generateContent?key=$apiKey"
-            )
 
+            Log.d(TAG, "URL (sin key): https://generativelanguage.googleapis.com/v1beta/models/$modelo:generateContent")
+
+            val url = URL(urlStr)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
@@ -240,15 +258,19 @@ object GeminiEngine {
             }
 
             val responseCode = connection.responseCode
+            Log.d(TAG, "Response code [$modelo]: $responseCode")
 
             if (responseCode != 200) {
                 val errorBody = connection.errorStream
                     ?.bufferedReader()?.use { it.readText() } ?: "Sin detalle"
+                Log.e(TAG, "Error HTTP [$modelo] $responseCode: $errorBody")
                 return "❌ Error $responseCode [$modelo]: $errorBody"
             }
 
             val responseText = connection.inputStream
                 .bufferedReader().use { it.readText() }
+
+            Log.d(TAG, "Response OK [$modelo] — longitud: ${responseText.length}")
 
             JSONObject(responseText)
                 .getJSONArray("candidates")
@@ -260,6 +282,7 @@ object GeminiEngine {
                 .trim()
 
         } catch (e: Exception) {
+            Log.e(TAG, "EXCEPCIÓN HTTP [$modelo]: ${e.message}", e)
             "❌ Error [$modelo]: ${e.message}"
         }
     }
