@@ -232,11 +232,11 @@ class MainActivity : AppCompatActivity() {
         chipsChina.setOnClickListener    { seleccionarCocina("China", chipsChina) }
 
         listOf(
-            R.id.chipFrancesa    to "Francesa 🇫🇷",
-            R.id.chipJaponesa    to "Japonesa 🇯🇵",
-            R.id.chipEspanola    to "Española 🇪🇸",
-            R.id.chipAmericana   to "Americana 🇺🇸",
-            R.id.chipTailandesa  to "Tailandesa 🇹🇭",
+            R.id.chipFrancesa     to "Francesa 🇫🇷",
+            R.id.chipJaponesa     to "Japonesa 🇯🇵",
+            R.id.chipEspanola     to "Española 🇪🇸",
+            R.id.chipAmericana    to "Americana 🇺🇸",
+            R.id.chipTailandesa   to "Tailandesa 🇹🇭",
             R.id.chipMediterranea to "Mediterránea 🫒"
         ).forEach { (id, nombre) ->
             findViewById<TextView>(id).setOnClickListener {
@@ -475,7 +475,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── BUG 1 FIX: Sin ingredientes falsos ───────────────────────────────────
+    // ─── PROCESAR IMAGEN ──────────────────────────────────────────────────────
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
@@ -516,26 +516,33 @@ class MainActivity : AppCompatActivity() {
                     evaluarYMostrarSemaforo()
 
                 } else {
-                    // Sin ingredientes falsos — mensaje honesto
+                    // Diagnóstico visible en pantalla
+                    val apiVacia = BuildConfig.GEMINI_API_KEY.isEmpty()
+                    val keyPreview = if (!apiVacia)
+                        BuildConfig.GEMINI_API_KEY.take(8) + "..."
+                    else "VACÍA"
+
                     chipContainer.addView(TextView(this@MainActivity).apply {
-                        text = "🔍 No detecté ingredientes en esta imagen.\n\n" +
-                               "Intenta:\n" +
-                               "• Acercar más la cámara a los alimentos\n" +
-                               "• Mejor iluminación\n" +
-                               "• Apuntar directo a los ingredientes"
-                        textSize = 14f
-                        setTextColor(Color.parseColor("#EEEEEE"))
+                        text = if (apiVacia) {
+                            "❌ API Key vacía — la key no llegó al APK.\n\nRecompila desde GitHub Actions."
+                        } else {
+                            "⚠️ IA no detectó ingredientes.\n\nKey OK: $keyPreview\n\nIntenta:\n• Acercar más la cámara\n• Mejor iluminación\n• Apuntar directo a los alimentos"
+                        }
+                        textSize = 13f
+                        setTextColor(Color.parseColor("#FF5722"))
                         gravity = Gravity.CENTER
                         setPadding(24, 32, 24, 32)
                     })
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(
-                    this@MainActivity,
-                    "❌ Error: ${e.localizedMessage ?: "Error desconocido"}",
-                    Toast.LENGTH_LONG
-                ).show()
+                chipContainer.addView(TextView(this@MainActivity).apply {
+                    text = "❌ Error: ${e.localizedMessage ?: "desconocido"}"
+                    textSize = 13f
+                    setTextColor(Color.parseColor("#FF5722"))
+                    gravity = Gravity.CENTER
+                    setPadding(24, 32, 24, 32)
+                })
             } finally {
                 btnScan.isEnabled = true
                 progressBar.visibility = View.GONE
@@ -595,7 +602,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── BUG 2 FIX: Diálogo primero, Gemini después ───────────────────────────
+    // ─── RECETA ───────────────────────────────────────────────────────────────
+
     private fun manejarSeleccionReceta(receta: String) {
         val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
 
