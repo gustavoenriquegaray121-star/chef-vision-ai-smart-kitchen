@@ -114,7 +114,6 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             val uri = fotoUri
 
-            // Intento 1: leer desde URI FileProvider
             if (uri != null) {
                 try {
                     val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -130,18 +129,16 @@ class MainActivity : AppCompatActivity() {
                     procesarImagen(bitmap)
                     return@registerForActivityResult
                 } catch (e: Exception) {
-                    // URI falló — caer al thumbnail
+                    // Fallback
                 }
             }
 
-            // Intento 2: thumbnail del intent
             val thumbnail = result.data?.extras?.get("data") as? Bitmap
             if (thumbnail != null) {
                 procesarImagen(thumbnail)
                 return@registerForActivityResult
             }
 
-            // Nada funcionó
             Toast.makeText(
                 this,
                 "⚠️ No se pudo leer la imagen. Intenta de nuevo.",
@@ -272,7 +269,7 @@ class MainActivity : AppCompatActivity() {
         cocinaSeleccionada = cocina
         listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina).forEach { id ->
             findViewById<TextView>(id).apply {
-                setBackgroundColor(Color.parseColor("#CC4CAF50"))
+                setBackgroundResource(R.drawable.glass_chip_free)
                 setTextColor(Color.WHITE)
                 alpha = 0.7f
             }
@@ -474,7 +471,6 @@ class MainActivity : AppCompatActivity() {
                 addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             }
 
-            // FIX: No usar resolveActivity — bloquea silenciosamente en Android 11+
             cameraLauncher.launch(intent)
 
         } catch (e: Exception) {
@@ -534,7 +530,7 @@ class MainActivity : AppCompatActivity() {
                         text = if (apiVacia) {
                             "❌ API Key vacía — la key no llegó al APK.\n\nRecompila desde GitHub Actions."
                         } else {
-                            "⚠️ IA no detectó ingredientes.\n\nKey OK: $keyPreview\n\nIntenta:\n• Acercar más la cámara\n• Mejor iluminación\n• Apuntar directo a los alimentos"
+                            "⚠️ IA no detectó ingredientes.\n\nIntenta:\n• Acercar más la cámara\n• Mejor iluminación\n• Apuntar directo a los alimentos"
                         }
                         textSize = 13f
                         setTextColor(Color.parseColor("#FF5722"))
@@ -648,16 +644,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun mostrarOpcionesEntrega(faltantes: List<String>) {
         val query = faltantes.joinToString("+")
+
         AlertDialog.Builder(this)
             .setTitle("🚚 ¿Cómo consigues lo que falta?")
-            .setMessage("Falta: ${faltantes.joinToString(", ")}")
+            .setMessage("Falta: ${faltantes.joinToString(", ")}\n\n💡 O si prefieres, selecciona 'Yo voy' para ver tips de ahorro en tienda.")
             .setPositiveButton("🛵 Rappi") { _, _ ->
-                abrirApp("com.grability.rappi", "https://www.rappi.com.mx/buscar/$query")
+                abrirApp(
+                    "com.grability.rappi",
+                    "https://www.rappi.com.mx/super/search?query=$query"
+                )
             }
             .setNeutralButton("🚗 Uber Eats") { _, _ ->
-                abrirApp("com.ubercab.eats", "https://www.ubereats.com/mx/search?q=$query")
+                abrirApp(
+                    "com.ubercab.eats",
+                    "https://www.ubereats.com/mx/search?q=$query"
+                )
             }
-            .setNegativeButton("🏪 Yo voy") { _, _ -> mostrarTipTienda() }
+            .setNegativeButton("📦 DiDi Food") { _, _ ->
+                abrirApp(
+                    "com.didiglobal.imhere",
+                    "https://www.didifood.com/mx/search?keyword=$query"
+                )
+            }
+            // Agregamos un botón extra o usamos un listener para la opción "Yo voy" si lo necesitas
+            .setNeutralButton("🏪 Yo voy") { _, _ ->
+                mostrarTipTienda()
+            }
             .show()
     }
 
