@@ -53,7 +53,7 @@ jobs:
       - name: Build Release APK
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Generar Keystore
         run: |
@@ -69,14 +69,17 @@ jobs:
 
       - name: Firmar APK
         run: |
+          # Buscamos cualquier APK que se haya generado en la carpeta de release
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           APKSIGNER=$(find $ANDROID_HOME -name "apksigner" | head -1)
+          
           $APKSIGNER sign \
             --ks chefvision.keystore \
             --ks-pass pass:'ChefVision2026$' \
             --key-pass pass:'ChefVision2026$' \
             --ks-key-alias chefvision \
             --out app/build/outputs/apk/release/ChefVisionIA-signed.apk \
-            app/build/outputs/apk/release/app-release-unsigned.apk
+            $APK_PATH
 
       - name: Subir APK firmado
         uses: actions/upload-artifact@v4
