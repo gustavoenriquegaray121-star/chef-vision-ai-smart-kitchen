@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_orange">#FF5722</color>
+    <color name="brand_orange_dark">#BF360C</color>
+    <color name="brand_orange_light">#FF7043</color>
+    <color name="bg_darkest">#0A0A0A</color>
+    <color name="bg_dark">#121212</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#CCCCCC</color>
+    <color name="text_hint">#888888</color>
+    <color name="plan_free_green">#4CAF50</color>
+    <color name="plan_premium_blue">#2196F3</color>
+    <color name="plan_ambassador_gold">#FFD700</color>
+    <color name="colorPrimary">#FF5722</color>
+    <color name="colorPrimaryDark">#BF360C</color>
+    <color name="colorAccent">#FF7043</color>
+</resources>
