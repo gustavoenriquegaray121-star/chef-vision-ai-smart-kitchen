@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ChefVisionIA"
+        parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/brand_orange</item>
+        <item name="colorPrimaryDark">@color/brand_orange_dark</item>
+        <item name="colorAccent">@color/brand_orange_light</item>
+        <item name="android:windowBackground">@color/bg_darkest</item>
+        <item name="android:statusBarColor">@color/bg_darkest</item>
+        <item name="android:navigationBarColor">@color/bg_darkest</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
