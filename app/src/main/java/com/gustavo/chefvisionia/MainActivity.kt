@@ -279,11 +279,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun marcarChipSeleccionado(chip: TextView) {
-        chip.apply {
-            setBackgroundColor(Color.parseColor("#FF5722"))
-            setTextColor(Color.WHITE)
-            alpha = 1f
-        }
+    chip.apply {
+        setBackgroundResource(R.drawable.chip_free_selected)
+        setTextColor(Color.WHITE)
+        alpha = 1f
+    }
     }
 
     private fun mostrarUpgradeCocina(cocina: String, planRequerido: String) {
