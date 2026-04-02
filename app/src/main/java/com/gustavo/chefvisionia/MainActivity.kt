@@ -221,7 +221,10 @@ class MainActivity : AppCompatActivity() {
             true
         }
         btnScan.setOnClickListener {
-            if (puedeEscanear()) solicitarPermisoCamara() else mostrarUpgrade()
+    it.performHapticFeedback(
+        android.view.HapticFeedbackConstants.VIRTUAL_KEY
+    )
+    if (puedeEscanear()) solicitarPermisoCamara() else mostrarUpgrade()
         }
         findViewById<View>(R.id.btnGoToCart).setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
