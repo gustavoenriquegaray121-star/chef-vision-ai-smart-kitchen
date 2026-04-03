@@ -848,4 +848,3 @@ class MainActivity : AppCompatActivity() {
             .show()
             }
     }
-}
