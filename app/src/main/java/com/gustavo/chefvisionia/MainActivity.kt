@@ -39,6 +39,16 @@ import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
+    // ─── PARTÍCULA — a nivel de clase, no dentro de función ───────────────────
+    private data class Particula(
+        var x: Float, var y: Float,
+        var vx: Float, var vy: Float,
+        val color: Int, val size: Float,
+        var alpha: Float = 1f,
+        var rotacion: Float = 0f,
+        val velocidadRot: Float = Random.nextFloat() * 8f - 4f
+    )
+
     // ─── ESTADO ───────────────────────────────────────────────────────────────
     private var scanCount = 0
     private var userPlan = "GRATUITO"
@@ -211,13 +221,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun inicializarListeners() {
-        // ─── Long press en txtPlan = Modo Dev ─────────────────────────────────
         txtPlan.setOnLongClickListener {
-            val opciones = arrayOf(
-                "🆓 GRATUITO",
-                "⭐ PREMIUM",
-                "👑 EMBAJADOR (SUPER)"
-            )
+            val opciones = arrayOf("🆓 GRATUITO", "⭐ PREMIUM", "👑 EMBAJADOR")
             AlertDialog.Builder(this)
                 .setTitle("🛠️ Modo Dev — Cambiar plan")
                 .setItems(opciones) { _, which ->
@@ -234,8 +239,7 @@ class MainActivity : AppCompatActivity() {
                     if (userPlan != "GRATUITO" && userPlan != planAnterior) {
                         celebrarUpgrade(userPlan)
                     } else {
-                        Toast.makeText(this,
-                            "Plan: $userPlan 🚀",
+                        Toast.makeText(this, "Plan: $userPlan 🚀",
                             Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -256,16 +260,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── CELEBRACIÓN UPGRADE ──────────────────────────────────────────────────
-
     private fun celebrarUpgrade(plan: String) {
         val esPremium = plan == "PREMIUM"
-
-        // Mensaje emocional inmediato
-        val titulo = if (esPremium)
-            "⭐ ¡Bienvenido a Premium!"
-        else
-            "👑 ¡Bienvenido a Embajador!"
-
+        val titulo = if (esPremium) "⭐ ¡Bienvenido a Premium!" else "👑 ¡Bienvenido a Embajador!"
         val mensaje = if (esPremium)
             "Ahora tienes 20 escaneos diarios y acceso a 6 cocinas internacionales.\n\n¡A cocinar!"
         else
@@ -277,7 +274,6 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("🎉 ¡Vamos!") { _, _ -> }
             .show()
 
-        // Delay 400ms → vibración → confeti
         Handler(Looper.getMainLooper()).postDelayed({
             vibrar(plan)
             Handler(Looper.getMainLooper()).postDelayed({
@@ -287,23 +283,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── VIBRACIÓN ────────────────────────────────────────────────────────────
-
     private fun vibrar(plan: String) {
         try {
+            @Suppress("DEPRECATION")
             val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val pattern = if (plan == "SUPER") {
-                    // Embajador: patrón festivo — 3 pulsos
+                val effect = if (plan == "SUPER") {
                     VibrationEffect.createWaveform(
                         longArrayOf(0, 80, 60, 80, 60, 120),
                         intArrayOf(0, 200, 0, 200, 0, 255),
                         -1
                     )
                 } else {
-                    // Premium: 1 pulso limpio
                     VibrationEffect.createOneShot(120, 180)
                 }
-                vibrator.vibrate(pattern)
+                vibrator.vibrate(effect)
             } else {
                 @Suppress("DEPRECATION")
                 if (plan == "SUPER") {
@@ -312,63 +306,44 @@ class MainActivity : AppCompatActivity() {
                     vibrator.vibrate(120)
                 }
             }
-        } catch (e: Exception) {
-            // Silencioso si no hay vibrador
-        }
+        } catch (e: Exception) { }
     }
 
     // ─── CONFETI ──────────────────────────────────────────────────────────────
-
     private fun lanzarConfeti(plan: String) {
-        val confettiView = object : View(this) {
-            data class Particula(
-                var x: Float, var y: Float,
-                var vx: Float, var vy: Float,
-                val color: Int, val size: Float,
-                var alpha: Float = 1f,
-                var rotacion: Float = 0f,
-                val velocidadRot: Float = Random.nextFloat() * 8f - 4f
+        val colores = if (plan == "SUPER") {
+            listOf(
+                Color.parseColor("#FFD700"), Color.parseColor("#FFA000"),
+                Color.parseColor("#FFFFFF"), Color.parseColor("#FF5722"),
+                Color.parseColor("#FFFDE7")
             )
+        } else {
+            listOf(
+                Color.parseColor("#FF5722"), Color.parseColor("#FFFFFF"),
+                Color.parseColor("#2196F3"), Color.parseColor("#FF7043"),
+                Color.parseColor("#BBDEFB")
+            )
+        }
 
-            val colores = if (plan == "SUPER") {
-                // Embajador — dorado + blanco + naranja
-                listOf(
-                    Color.parseColor("#FFD700"),
-                    Color.parseColor("#FFA000"),
-                    Color.parseColor("#FFFFFF"),
-                    Color.parseColor("#FF5722"),
-                    Color.parseColor("#FFFDE7")
-                )
-            } else {
-                // Premium — naranja + blanco + azul
-                listOf(
-                    Color.parseColor("#FF5722"),
-                    Color.parseColor("#FFFFFF"),
-                    Color.parseColor("#2196F3"),
-                    Color.parseColor("#FF7043"),
-                    Color.parseColor("#BBDEFB")
-                )
-            }
+        val cantidad = if (plan == "SUPER") 80 else 50
+        val anchoPantalla = resources.displayMetrics.widthPixels.toFloat()
+        val particulas = mutableListOf<Particula>()
 
-            val cantidad = if (plan == "SUPER") 80 else 50
-            val particulas = mutableListOf<Particula>()
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-            var frameCount = 0
+        repeat(cantidad) {
+            particulas.add(Particula(
+                x  = Random.nextFloat() * anchoPantalla,
+                y  = -Random.nextFloat() * 200f,
+                vx = Random.nextFloat() * 6f - 3f,
+                vy = Random.nextFloat() * 4f + 3f,
+                color = colores.random(),
+                size  = Random.nextFloat() * 12f + 6f
+            ))
+        }
 
-            init {
-                val anchoPantalla = resources.displayMetrics.widthPixels.toFloat()
-                repeat(cantidad) {
-                    particulas.add(Particula(
-                        x  = Random.nextFloat() * anchoPantalla,
-                        y  = -Random.nextFloat() * 200f,
-                        vx = Random.nextFloat() * 6f - 3f,
-                        vy = Random.nextFloat() * 4f + 3f,
-                        color = colores.random(),
-                        size  = Random.nextFloat() * 12f + 6f
-                    ))
-                }
-            }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        var frameCount = 0
 
+        val confettiView = object : View(this) {
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 frameCount++
@@ -377,7 +352,7 @@ class MainActivity : AppCompatActivity() {
                 particulas.forEach { p ->
                     p.x += p.vx
                     p.y += p.vy
-                    p.vy += 0.15f  // gravedad
+                    p.vy += 0.15f
                     p.rotacion += p.velocidadRot
                     if (p.y > height * 0.6f) p.alpha -= 0.018f
                     if (p.alpha < 0f) p.alpha = 0f
@@ -385,7 +360,6 @@ class MainActivity : AppCompatActivity() {
 
                     paint.color = p.color
                     paint.alpha = (p.alpha * 255).toInt().coerceIn(0, 255)
-
                     canvas.save()
                     canvas.rotate(p.rotacion, p.x, p.y)
                     canvas.drawRect(
@@ -411,15 +385,12 @@ class MainActivity : AppCompatActivity() {
         )
         decorView.addView(confettiView)
 
-        // Glow dorado extra para Embajador
         if (plan == "SUPER") {
             rootLayout.animate()
-                .alpha(0.85f)
-                .setDuration(200)
+                .alpha(0.85f).setDuration(200)
                 .withEndAction {
                     rootLayout.animate().alpha(1f).setDuration(300).start()
-                }
-                .start()
+                }.start()
         }
 
         confettiView.invalidate()
@@ -485,13 +456,11 @@ class MainActivity : AppCompatActivity() {
     private fun mostrarUpgradeCocina(cocina: String, planRequerido: String) {
         val (titulo, precio, beneficios) = when (planRequerido) {
             "PREMIUM" -> Triple(
-                "⭐ $cocina — Plan Premium",
-                "\$699/año",
+                "⭐ $cocina — Plan Premium", "\$699/año",
                 "• 20 escaneos diarios\n• 6 cocinas internacionales\n• Sin anuncios"
             )
             else -> Triple(
-                "👑 $cocina — Plan Embajador",
-                "\$899/año",
+                "👑 $cocina — Plan Embajador", "\$899/año",
                 "• Escaneos ILIMITADOS\n• Todas las cocinas\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
             )
         }
@@ -580,9 +549,8 @@ class MainActivity : AppCompatActivity() {
         val inventario = MemoryManager.obtener(this)
         if (inventario.isEmpty()) return
 
-        val prefs = this.getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
         val ahora = System.currentTimeMillis()
-
         val rojos     = mutableListOf<Pair<String, String>>()
         val amarillos = mutableListOf<String>()
         val verdes    = mutableListOf<String>()
@@ -591,22 +559,18 @@ class MainActivity : AppCompatActivity() {
             val key = ingrediente.lowercase().trim()
             val fechaCarga = prefs.getLong(key, 0L)
             if (fechaCarga == 0L) return@forEach
-
-            val diff = ahora - fechaCarga
-            val diasPasados = TimeUnit.MILLISECONDS.toDays(diff).toInt()
-
+            val diasPasados = TimeUnit.MILLISECONDS
+                .toDays(ahora - fechaCarga).toInt()
             val limite = FreshnessManager.freshnessRules[key]
                 ?: FreshnessManager.freshnessRules.entries
-                    .find { key.contains(it.key) }?.value
-                ?: 7
-
+                    .find { key.contains(it.key) }?.value ?: 7
             when {
                 diasPasados >= limite -> {
-                    val sugerencia = FreshnessManager.sugerencias[key]
+                    val sug = FreshnessManager.sugerencias[key]
                         ?: FreshnessManager.sugerencias.entries
                             .find { (k, _) -> key.contains(k) }?.value
                         ?: "¡Cocina algo rico antes de que se pierda!"
-                    rojos.add(Pair(ingrediente, sugerencia))
+                    rojos.add(Pair(ingrediente, sug))
                 }
                 diasPasados >= limite - 2 -> amarillos.add(ingrediente)
                 else -> verdes.add(ingrediente)
@@ -649,9 +613,7 @@ class MainActivity : AppCompatActivity() {
             )
             foto.parentFile?.mkdirs()
             fotoUri = FileProvider.getUriForFile(
-                this,
-                "com.gustavo.chefvisionia.fileprovider",
-                foto
+                this, "com.gustavo.chefvisionia.fileprovider", foto
             )
             val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
                 putExtra(MediaStore.EXTRA_OUTPUT, fotoUri)
@@ -691,8 +653,7 @@ class MainActivity : AppCompatActivity() {
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
                     val editor = getSharedPreferences(
-                        "ChefInventory", Context.MODE_PRIVATE
-                    ).edit()
+                        "ChefInventory", Context.MODE_PRIVATE).edit()
                     ingredientes.forEach { ingr ->
                         editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
                     }
@@ -702,11 +663,10 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     val apiVacia = BuildConfig.GEMINI_API_KEY.isEmpty()
                     chipContainer.addView(TextView(this@MainActivity).apply {
-                        text = if (apiVacia) {
+                        text = if (apiVacia)
                             "❌ API Key vacía — recompila desde GitHub Actions."
-                        } else {
+                        else
                             "⚠️ IA no detectó ingredientes.\n\nIntenta:\n• Acercar más la cámara\n• Mejor iluminación\n• Apuntar directo a los alimentos"
-                        }
                         textSize = 13f
                         setTextColor(Color.parseColor("#FF5722"))
                         gravity = Gravity.CENTER
@@ -783,9 +743,7 @@ class MainActivity : AppCompatActivity() {
         if (faltantes.isNotEmpty()) {
             AlertDialog.Builder(this)
                 .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
-                .setMessage(
-                    "Para '$receta' te falta: ${faltantes.joinToString(", ")}.\n\n¿Qué deseas hacer?"
-                )
+                .setMessage("Para '$receta' te falta: ${faltantes.joinToString(", ")}.\n\n¿Qué deseas hacer?")
                 .setPositiveButton("🛒 Agregar al carrito") { _, _ ->
                     CartMemory.agregarLista(this, faltantes)
                     mostrarOpcionesEntrega(faltantes)
@@ -871,22 +829,23 @@ class MainActivity : AppCompatActivity() {
                 "• Integración Rappi / Uber Eats"
             )
             .setPositiveButton("👑 Plan Embajador") { _, _ ->
-                celebrarUpgrade("SUPER")
                 userPlan = "SUPER"
                 scanCount = 0
                 getSharedPreferences("app_prefs", MODE_PRIVATE)
                     .edit().putInt("scan_count", 0).apply()
                 actualizarUIPlan()
+                celebrarUpgrade("SUPER")
             }
             .setNeutralButton("⭐ Premium") { _, _ ->
-                celebrarUpgrade("PREMIUM")
                 userPlan = "PREMIUM"
                 scanCount = 0
                 getSharedPreferences("app_prefs", MODE_PRIVATE)
                     .edit().putInt("scan_count", 0).apply()
                 actualizarUIPlan()
+                celebrarUpgrade("PREMIUM")
             }
             .setNegativeButton("Luego", null)
             .show()
+            }
     }
 }
