@@ -25,7 +25,7 @@ class CartActivity : AppCompatActivity() {
         txtTotal         = findViewById(R.id.txtTotal)
 
         lista   = CartMemory.obtenerLista(this)
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista)
+        adapter = ArrayAdapter(this, R.layout.item_cart, R.id.txtItem, lista)
         listView.adapter = adapter
 
         actualizarTotal()
