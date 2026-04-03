@@ -5,12 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.MediaStore
 import android.provider.Settings
 import android.view.Gravity
@@ -29,6 +35,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
@@ -47,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnScan: Button
     private lateinit var adView: AdView
     private lateinit var progressBar: ProgressBar
+    private lateinit var rootLayout: View
 
     // ─── SEMÁFORO DE FRESCURA ─────────────────────────────────────────────────
     private object FreshnessManager {
@@ -65,7 +73,6 @@ class MainActivity : AppCompatActivity() {
             "naranja"   to 7,  "manzana"   to 7,
             "chile"     to 7,  "brócoli"   to 5
         )
-
         val sugerencias = mapOf(
             "espinaca"  to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
             "tomate"    to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
@@ -107,13 +114,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── FIX CÁMARA: sin resolveActivity que bloquea en Android 11+ ──────────
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val uri = fotoUri
-
             if (uri != null) {
                 try {
                     val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -128,22 +133,16 @@ class MainActivity : AppCompatActivity() {
                     }
                     procesarImagen(bitmap)
                     return@registerForActivityResult
-                } catch (e: Exception) {
-                    // Fallback
-                }
+                } catch (e: Exception) { }
             }
-
             val thumbnail = result.data?.extras?.get("data") as? Bitmap
             if (thumbnail != null) {
                 procesarImagen(thumbnail)
                 return@registerForActivityResult
             }
-
-            Toast.makeText(
-                this,
+            Toast.makeText(this,
                 "⚠️ No se pudo leer la imagen. Intenta de nuevo.",
-                Toast.LENGTH_LONG
-            ).show()
+                Toast.LENGTH_LONG).show()
         }
     }
 
@@ -172,7 +171,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── INICIALIZACIÓN ───────────────────────────────────────────────────────
-
     private fun inicializarVistas() {
         chipContainer = findViewById(R.id.chipContainer)
         txtPlan       = findViewById(R.id.txtPlan)
@@ -181,6 +179,7 @@ class MainActivity : AppCompatActivity() {
         btnScan       = findViewById(R.id.btnScanIngredients)
         adView        = findViewById(R.id.adView)
         progressBar   = findViewById(R.id.progressBar)
+        rootLayout    = findViewById(android.R.id.content)
     }
 
     private fun inicializarAdMob() {
@@ -212,27 +211,221 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun inicializarListeners() {
+        // ─── Long press en txtPlan = Modo Dev ─────────────────────────────────
         txtPlan.setOnLongClickListener {
-            scanCount = 0
-            getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                .edit().putInt("scan_count", 0).apply()
-            actualizarUIPlan()
-            Toast.makeText(this, "🚀 Modo Dev: Escaneos reseteados", Toast.LENGTH_LONG).show()
+            val opciones = arrayOf(
+                "🆓 GRATUITO",
+                "⭐ PREMIUM",
+                "👑 EMBAJADOR (SUPER)"
+            )
+            AlertDialog.Builder(this)
+                .setTitle("🛠️ Modo Dev — Cambiar plan")
+                .setItems(opciones) { _, which ->
+                    val planAnterior = userPlan
+                    userPlan = when (which) {
+                        1 -> "PREMIUM"
+                        2 -> "SUPER"
+                        else -> "GRATUITO"
+                    }
+                    scanCount = 0
+                    getSharedPreferences("app_prefs", MODE_PRIVATE)
+                        .edit().putInt("scan_count", 0).apply()
+                    actualizarUIPlan()
+                    if (userPlan != "GRATUITO" && userPlan != planAnterior) {
+                        celebrarUpgrade(userPlan)
+                    } else {
+                        Toast.makeText(this,
+                            "Plan: $userPlan 🚀",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .show()
             true
         }
+
         btnScan.setOnClickListener {
-    it.performHapticFeedback(
-        android.view.HapticFeedbackConstants.VIRTUAL_KEY
-    )
-    if (puedeEscanear()) solicitarPermisoCamara() else mostrarUpgrade()
+            it.performHapticFeedback(
+                android.view.HapticFeedbackConstants.VIRTUAL_KEY
+            )
+            if (puedeEscanear()) solicitarPermisoCamara() else mostrarUpgrade()
         }
+
         findViewById<View>(R.id.btnGoToCart).setOnClickListener {
             startActivity(Intent(this, CartActivity::class.java))
         }
     }
 
-    // ─── CHIPS DE COCINAS ─────────────────────────────────────────────────────
+    // ─── CELEBRACIÓN UPGRADE ──────────────────────────────────────────────────
 
+    private fun celebrarUpgrade(plan: String) {
+        val esPremium = plan == "PREMIUM"
+
+        // Mensaje emocional inmediato
+        val titulo = if (esPremium)
+            "⭐ ¡Bienvenido a Premium!"
+        else
+            "👑 ¡Bienvenido a Embajador!"
+
+        val mensaje = if (esPremium)
+            "Ahora tienes 20 escaneos diarios y acceso a 6 cocinas internacionales.\n\n¡A cocinar!"
+        else
+            "Has desbloqueado la experiencia completa de Chef Vision IA.\n\nMemoria familiar, cocinas exclusivas y escaneos ilimitados. 💖"
+
+        AlertDialog.Builder(this)
+            .setTitle(titulo)
+            .setMessage(mensaje)
+            .setPositiveButton("🎉 ¡Vamos!") { _, _ -> }
+            .show()
+
+        // Delay 400ms → vibración → confeti
+        Handler(Looper.getMainLooper()).postDelayed({
+            vibrar(plan)
+            Handler(Looper.getMainLooper()).postDelayed({
+                lanzarConfeti(plan)
+            }, 150)
+        }, 400)
+    }
+
+    // ─── VIBRACIÓN ────────────────────────────────────────────────────────────
+
+    private fun vibrar(plan: String) {
+        try {
+            val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val pattern = if (plan == "SUPER") {
+                    // Embajador: patrón festivo — 3 pulsos
+                    VibrationEffect.createWaveform(
+                        longArrayOf(0, 80, 60, 80, 60, 120),
+                        intArrayOf(0, 200, 0, 200, 0, 255),
+                        -1
+                    )
+                } else {
+                    // Premium: 1 pulso limpio
+                    VibrationEffect.createOneShot(120, 180)
+                }
+                vibrator.vibrate(pattern)
+            } else {
+                @Suppress("DEPRECATION")
+                if (plan == "SUPER") {
+                    vibrator.vibrate(longArrayOf(0, 80, 60, 80, 60, 120), -1)
+                } else {
+                    vibrator.vibrate(120)
+                }
+            }
+        } catch (e: Exception) {
+            // Silencioso si no hay vibrador
+        }
+    }
+
+    // ─── CONFETI ──────────────────────────────────────────────────────────────
+
+    private fun lanzarConfeti(plan: String) {
+        val confettiView = object : View(this) {
+            data class Particula(
+                var x: Float, var y: Float,
+                var vx: Float, var vy: Float,
+                val color: Int, val size: Float,
+                var alpha: Float = 1f,
+                var rotacion: Float = 0f,
+                val velocidadRot: Float = Random.nextFloat() * 8f - 4f
+            )
+
+            val colores = if (plan == "SUPER") {
+                // Embajador — dorado + blanco + naranja
+                listOf(
+                    Color.parseColor("#FFD700"),
+                    Color.parseColor("#FFA000"),
+                    Color.parseColor("#FFFFFF"),
+                    Color.parseColor("#FF5722"),
+                    Color.parseColor("#FFFDE7")
+                )
+            } else {
+                // Premium — naranja + blanco + azul
+                listOf(
+                    Color.parseColor("#FF5722"),
+                    Color.parseColor("#FFFFFF"),
+                    Color.parseColor("#2196F3"),
+                    Color.parseColor("#FF7043"),
+                    Color.parseColor("#BBDEFB")
+                )
+            }
+
+            val cantidad = if (plan == "SUPER") 80 else 50
+            val particulas = mutableListOf<Particula>()
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            var frameCount = 0
+
+            init {
+                val anchoPantalla = resources.displayMetrics.widthPixels.toFloat()
+                repeat(cantidad) {
+                    particulas.add(Particula(
+                        x  = Random.nextFloat() * anchoPantalla,
+                        y  = -Random.nextFloat() * 200f,
+                        vx = Random.nextFloat() * 6f - 3f,
+                        vy = Random.nextFloat() * 4f + 3f,
+                        color = colores.random(),
+                        size  = Random.nextFloat() * 12f + 6f
+                    ))
+                }
+            }
+
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                frameCount++
+                var todasFuera = true
+
+                particulas.forEach { p ->
+                    p.x += p.vx
+                    p.y += p.vy
+                    p.vy += 0.15f  // gravedad
+                    p.rotacion += p.velocidadRot
+                    if (p.y > height * 0.6f) p.alpha -= 0.018f
+                    if (p.alpha < 0f) p.alpha = 0f
+                    if (p.y < height + 50f) todasFuera = false
+
+                    paint.color = p.color
+                    paint.alpha = (p.alpha * 255).toInt().coerceIn(0, 255)
+
+                    canvas.save()
+                    canvas.rotate(p.rotacion, p.x, p.y)
+                    canvas.drawRect(
+                        p.x - p.size / 2f, p.y - p.size / 4f,
+                        p.x + p.size / 2f, p.y + p.size / 4f,
+                        paint
+                    )
+                    canvas.restore()
+                }
+
+                if (!todasFuera && frameCount < 180) {
+                    invalidate()
+                } else {
+                    (parent as? FrameLayout)?.removeView(this)
+                }
+            }
+        }
+
+        val decorView = window.decorView as FrameLayout
+        confettiView.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        decorView.addView(confettiView)
+
+        // Glow dorado extra para Embajador
+        if (plan == "SUPER") {
+            rootLayout.animate()
+                .alpha(0.85f)
+                .setDuration(200)
+                .withEndAction {
+                    rootLayout.animate().alpha(1f).setDuration(300).start()
+                }
+                .start()
+        }
+
+        confettiView.invalidate()
+    }
+
+    // ─── CHIPS DE COCINAS ─────────────────────────────────────────────────────
     private fun inicializarChipsCocinas() {
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
@@ -282,11 +475,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun marcarChipSeleccionado(chip: TextView) {
-    chip.apply {
-        setBackgroundResource(R.drawable.chip_free_selected)
-        setTextColor(Color.WHITE)
-        alpha = 1f
-    }
+        chip.apply {
+            setBackgroundResource(R.drawable.chip_free_selected)
+            setTextColor(Color.WHITE)
+            alpha = 1f
+        }
     }
 
     private fun mostrarUpgradeCocina(cocina: String, planRequerido: String) {
@@ -304,7 +497,7 @@ class MainActivity : AppCompatActivity() {
         }
         AlertDialog.Builder(this)
             .setTitle(titulo)
-            .setMessage("Para cocina $cocina necesitas el plan $planRequerido ($precio):\n\n$beneficios")
+            .setMessage("Para $cocina necesitas el plan $planRequerido ($precio):\n\n$beneficios")
             .setPositiveButton("🚀 Quiero este plan") { _, _ ->
                 Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
             }
@@ -313,7 +506,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── PLAN ─────────────────────────────────────────────────────────────────
-
     private fun actualizarUIPlan() {
         val limite = limiteDeEscaneos()
         val textoLimite = if (limite >= 99999) "∞" else limite.toString()
@@ -338,7 +530,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── PERMISOS ─────────────────────────────────────────────────────────────
-
     private fun solicitarPermisoCamara() {
         when {
             checkSelfPermission(Manifest.permission.CAMERA) ==
@@ -361,7 +552,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── EVENTOS FAMILIARES ───────────────────────────────────────────────────
-
     private fun verificarEventoFamiliar() {
         val evento = EventMemoryManager.buscarEventoCercano(this) ?: return
         val mensaje = EventMemoryManager.obtenerMensajeEvento(evento)
@@ -373,7 +563,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── TIP POR HORA ─────────────────────────────────────────────────────────
-
     private fun mostrarTipPorHora() {
         val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         txtTip.text = when {
@@ -387,7 +576,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── SEMÁFORO ─────────────────────────────────────────────────────────────
-
     private fun evaluarYMostrarSemaforo() {
         val inventario = MemoryManager.obtener(this)
         if (inventario.isEmpty()) return
@@ -452,8 +640,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ─── CÁMARA FIX ───────────────────────────────────────────────────────────
-
+    // ─── CÁMARA ───────────────────────────────────────────────────────────────
     private fun abrirCamara() {
         try {
             val foto = File(
@@ -461,21 +648,17 @@ class MainActivity : AppCompatActivity() {
                 "chef_scan_${System.currentTimeMillis()}.jpg"
             )
             foto.parentFile?.mkdirs()
-
             fotoUri = FileProvider.getUriForFile(
                 this,
                 "com.gustavo.chefvisionia.fileprovider",
                 foto
             )
-
             val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
                 putExtra(MediaStore.EXTRA_OUTPUT, fotoUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             }
-
             cameraLauncher.launch(intent)
-
         } catch (e: Exception) {
             fotoUri = null
             cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
@@ -483,7 +666,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── PROCESAR IMAGEN ──────────────────────────────────────────────────────
-
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
@@ -493,7 +675,6 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
-
                 val contextoFamiliar = buildString {
                     append("Cocina seleccionada: $cocinaSeleccionada. ")
                     append("Sugiere recetas específicas de cocina $cocinaSeleccionada. ")
@@ -502,16 +683,13 @@ class MainActivity : AppCompatActivity() {
                         append("${it.dia}/${it.mes}. Le gusta: ${it.gustos}.")
                     }
                 }
-
                 val ingredientes = GeminiEngine.detectarIngredientes(
                     bitmapResized, contextoFamiliar
                 )
-
                 if (ingredientes.isNotEmpty()) {
                     ingredientesDetectados.clear()
                     ingredientesDetectados.addAll(ingredientes)
                     MemoryManager.guardar(this@MainActivity, ingredientes)
-
                     val editor = getSharedPreferences(
                         "ChefInventory", Context.MODE_PRIVATE
                     ).edit()
@@ -519,19 +697,13 @@ class MainActivity : AppCompatActivity() {
                         editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
                     }
                     editor.apply()
-
                     mostrarOpciones()
                     evaluarYMostrarSemaforo()
-
                 } else {
                     val apiVacia = BuildConfig.GEMINI_API_KEY.isEmpty()
-                    val keyPreview = if (!apiVacia)
-                        BuildConfig.GEMINI_API_KEY.take(8) + "..."
-                    else "VACÍA"
-
                     chipContainer.addView(TextView(this@MainActivity).apply {
                         text = if (apiVacia) {
-                            "❌ API Key vacía — la key no llegó al APK.\n\nRecompila desde GitHub Actions."
+                            "❌ API Key vacía — recompila desde GitHub Actions."
                         } else {
                             "⚠️ IA no detectó ingredientes.\n\nIntenta:\n• Acercar más la cámara\n• Mejor iluminación\n• Apuntar directo a los alimentos"
                         }
@@ -541,7 +713,6 @@ class MainActivity : AppCompatActivity() {
                         setPadding(24, 32, 24, 32)
                     })
                 }
-
             } catch (e: Exception) {
                 chipContainer.addView(TextView(this@MainActivity).apply {
                     text = "❌ Error: ${e.localizedMessage ?: "desconocido"}"
@@ -559,7 +730,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── OPCIONES ─────────────────────────────────────────────────────────────
-
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
         chipContainer.addView(TextView(this).apply {
@@ -569,7 +739,6 @@ class MainActivity : AppCompatActivity() {
             setPadding(16, 8, 16, 16)
             gravity = Gravity.CENTER
         })
-
         val opciones = RecipeEngine.generarOpciones(ingredientesDetectados)
         if (opciones.isEmpty()) {
             chipContainer.addView(TextView(this).apply {
@@ -581,7 +750,6 @@ class MainActivity : AppCompatActivity() {
             })
             return
         }
-
         opciones.forEach { receta ->
             val chip = TextView(this).apply {
                 text = receta
@@ -610,16 +778,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── RECETA ───────────────────────────────────────────────────────────────
-
     private fun manejarSeleccionReceta(receta: String) {
         val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
-
         if (faltantes.isNotEmpty()) {
             AlertDialog.Builder(this)
                 .setTitle("🛒 Te falta: ${faltantes.joinToString(", ")}")
                 .setMessage(
-                    "Para '$receta' te falta: ${faltantes.joinToString(", ")}.\n\n" +
-                    "¿Qué deseas hacer?"
+                    "Para '$receta' te falta: ${faltantes.joinToString(", ")}.\n\n¿Qué deseas hacer?"
                 )
                 .setPositiveButton("🛒 Agregar al carrito") { _, _ ->
                     CartMemory.agregarLista(this, faltantes)
@@ -644,34 +809,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── ENTREGA ──────────────────────────────────────────────────────────────
-
     private fun mostrarOpcionesEntrega(faltantes: List<String>) {
         val query = faltantes.joinToString("+")
-
         AlertDialog.Builder(this)
             .setTitle("🚚 ¿Cómo consigues lo que falta?")
-            .setMessage("Falta: ${faltantes.joinToString(", ")}\n\n💡 O si prefieres, selecciona 'Yo voy' para ver tips de ahorro en tienda.")
+            .setMessage("Falta: ${faltantes.joinToString(", ")}")
             .setPositiveButton("🛵 Rappi") { _, _ ->
-                abrirApp(
-                    "com.grability.rappi",
-                    "https://www.rappi.com.mx/super/search?query=$query"
-                )
+                abrirApp("com.grability.rappi",
+                    "https://www.rappi.com.mx/super/search?query=$query")
             }
             .setNeutralButton("🚗 Uber Eats") { _, _ ->
-                abrirApp(
-                    "com.ubercab.eats",
-                    "https://www.ubereats.com/mx/search?q=$query"
-                )
+                abrirApp("com.ubercab.eats",
+                    "https://www.ubereats.com/mx/search?q=$query")
             }
-            .setNegativeButton("📦 DiDi Food") { _, _ ->
-                abrirApp(
-                    "com.didiglobal.imhere",
-                    "https://www.didifood.com/mx/search?keyword=$query"
-                )
-            }
-            // Agregamos un botón extra o usamos un listener para la opción "Yo voy" si lo necesitas
-            .setNeutralButton("🏪 Yo voy") { _, _ ->
-                mostrarTipTienda()
+            .setNegativeButton("📦 DiDi") { _, _ ->
+                abrirApp("com.didiglobal.imhere",
+                    "https://www.didifood.com/mx/search?keyword=$query")
             }
             .show()
     }
@@ -701,7 +854,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── UPGRADE ──────────────────────────────────────────────────────────────
-
     private fun mostrarUpgrade() {
         AlertDialog.Builder(this)
             .setTitle("🚀 Desbloquea Chef Vision")
@@ -719,10 +871,20 @@ class MainActivity : AppCompatActivity() {
                 "• Integración Rappi / Uber Eats"
             )
             .setPositiveButton("👑 Plan Embajador") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
+                celebrarUpgrade("SUPER")
+                userPlan = "SUPER"
+                scanCount = 0
+                getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .edit().putInt("scan_count", 0).apply()
+                actualizarUIPlan()
             }
             .setNeutralButton("⭐ Premium") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
+                celebrarUpgrade("PREMIUM")
+                userPlan = "PREMIUM"
+                scanCount = 0
+                getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .edit().putInt("scan_count", 0).apply()
+                actualizarUIPlan()
             }
             .setNegativeButton("Luego", null)
             .show()
