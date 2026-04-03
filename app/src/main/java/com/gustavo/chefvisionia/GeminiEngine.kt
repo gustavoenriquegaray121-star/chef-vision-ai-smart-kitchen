@@ -17,22 +17,17 @@ object GeminiEngine {
     var apiKey: String = ""
     private const val TAG = "GEMINI_DEBUG"
 
-    // ─── MODELOS — orden actualizado ──────────────────────────────────────────
     private val modelos = listOf(
         "gemini-2.0-flash-lite",
         "gemini-2.0-flash",
         "gemini-1.5-flash-latest"
     )
 
-    // ─── CONVERSIÓN ───────────────────────────────────────────────────────────
-
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
         return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
     }
-
-    // ─── DETECCIÓN DE INGREDIENTES ────────────────────────────────────────────
 
     suspend fun detectarIngredientes(
         bitmap: Bitmap,
@@ -46,7 +41,7 @@ object GeminiEngine {
                 Log.d(TAG, "Contexto: $contextoFamiliar")
 
                 val base64Image = bitmapToBase64(bitmap)
-                Log.d(TAG, "Imagen convertida a base64 OK — tamaño: ${base64Image.length} chars")
+                Log.d(TAG, "Imagen convertida OK — tamaño: ${base64Image.length} chars")
 
                 val contextoExtra = if (contextoFamiliar.isNotEmpty())
                     "\n\nContexto especial: $contextoFamiliar"
@@ -54,11 +49,25 @@ object GeminiEngine {
 
                 val prompt = """
                     Eres Chef Vision IA, el asistente culinario más inteligente del mundo.
-                    Analiza esta imagen y lista SOLO los ingredientes alimenticios que ves.
-                    Si no ves ingredientes alimenticios en la imagen, responde exactamente: NINGUNO
-                    Responde ÚNICAMENTE con una lista separada por comas, en español y en minúsculas.
-                    Ejemplo: huevo, tocino, cebolla, tomate
-                    No agregues explicaciones, títulos ni texto extra.$contextoExtra
+                    Analiza esta imagen con máxima atención.
+                    
+                    Puedes ver:
+                    - Ingredientes sueltos (verduras, frutas, carnes, lácteos)
+                    - Empaques o productos de supermercado (tocino, jamón, queso, etc.)
+                    - Comida preparada o platillos
+                    - Refri o despensa con varios productos
+                    
+                    Tu tarea: identificar TODO lo que sea comestible o ingrediente.
+                    Si ves un empaque de tocino FUD, responde: tocino
+                    Si ves una crema Alpura, responde: crema
+                    Si ves huevos, responde: huevo
+                    
+                    Responde ÚNICAMENTE con los ingredientes separados por comas,
+                    en español y en minúsculas, sin explicaciones.
+                    Ejemplo: tocino, crema, huevo
+                    
+                    Solo si la imagen no tiene absolutamente nada relacionado
+                    con comida, responde: NINGUNO$contextoExtra
                 """.trimIndent()
 
                 val respuesta = llamarGeminiConFallback(base64Image, prompt)
@@ -80,13 +89,11 @@ object GeminiEngine {
                 ingredientes
 
             } catch (e: Exception) {
-                Log.e(TAG, "EXCEPCIÓN en detectarIngredientes: ${e.message}", e)
+                Log.e(TAG, "EXCEPCIÓN: ${e.message}", e)
                 emptyList()
             }
         }
     }
-
-    // ─── GENERACIÓN DE RECETA ─────────────────────────────────────────────────
 
     suspend fun generarReceta(
         nombreReceta: String,
@@ -134,8 +141,6 @@ object GeminiEngine {
         }
     }
 
-    // ─── SUSTITUCIÓN INTELIGENTE ──────────────────────────────────────────────
-
     suspend fun sugerirSustitucion(
         ingredienteFaltante: String,
         ingredientesDisponibles: List<String>
@@ -162,8 +167,6 @@ object GeminiEngine {
         }
     }
 
-    // ─── TIP DE FRESCURA ──────────────────────────────────────────────────────
-
     suspend fun generarTipFrescura(
         ingrediente: String,
         diasEnRefri: Int
@@ -186,9 +189,10 @@ object GeminiEngine {
         }
     }
 
-    // ─── LLAMADA CON FALLBACK AUTOMÁTICO ─────────────────────────────────────
-
-    private fun llamarGeminiConFallback(base64Image: String?, prompt: String): String {
+    private fun llamarGeminiConFallback(
+        base64Image: String?,
+        prompt: String
+    ): String {
         var ultimoError = ""
         for (modelo in modelos) {
             Log.d(TAG, "Intentando modelo: $modelo")
@@ -203,8 +207,6 @@ object GeminiEngine {
         Log.e(TAG, "❌ Todos los modelos fallaron. Último error: $ultimoError")
         return ultimoError
     }
-
-    // ─── LLAMADA HTTP A GEMINI ────────────────────────────────────────────────
 
     private fun llamarGemini(
         base64Image: String?,
@@ -242,7 +244,7 @@ object GeminiEngine {
             val urlStr = "https://generativelanguage.googleapis.com/v1beta/models/" +
                 "$modelo:generateContent?key=$apiKey"
 
-            Log.d(TAG, "URL (sin key): https://generativelanguage.googleapis.com/v1beta/models/$modelo:generateContent")
+            Log.d(TAG, "URL modelo: $modelo")
 
             val url = URL(urlStr)
             val connection = url.openConnection() as HttpURLConnection
