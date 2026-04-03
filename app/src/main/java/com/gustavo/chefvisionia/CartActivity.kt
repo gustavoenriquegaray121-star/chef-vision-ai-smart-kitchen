@@ -1,6 +1,7 @@
 package com.gustavo.chefvisionia
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -22,6 +23,9 @@ class CartActivity : AppCompatActivity() {
         val btnWhats     = findViewById<Button>(R.id.btnWhats)
         val btnBack      = findViewById<ImageButton>(R.id.btnBack)
         val btnClear     = findViewById<Button>(R.id.btnClear)
+        val btnRappi     = findViewById<Button>(R.id.btnRappi)
+        val btnUber      = findViewById<Button>(R.id.btnUber)
+        val btnDidi      = findViewById<Button>(R.id.btnDidi)
         txtTotal         = findViewById(R.id.txtTotal)
 
         lista   = CartMemory.obtenerLista(this)
@@ -30,9 +34,28 @@ class CartActivity : AppCompatActivity() {
 
         actualizarTotal()
 
-        btnAdd.setOnClickListener { mostrarDialogoAgregar() }
+        btnAdd.setOnClickListener   { mostrarDialogoAgregar() }
         btnWhats.setOnClickListener { compartirWhatsApp() }
-        btnBack.setOnClickListener { finish() }
+        btnBack.setOnClickListener  { finish() }
+
+        btnRappi.setOnClickListener {
+            abrirDelivery(
+                "com.grability.rappi",
+                "https://www.rappi.com.mx"
+            )
+        }
+        btnUber.setOnClickListener {
+            abrirDelivery(
+                "com.ubercab.eats",
+                "https://www.ubereats.com/mx"
+            )
+        }
+        btnDidi.setOnClickListener {
+            abrirDelivery(
+                "com.didiglobal.imhere",
+                "https://www.didifood.com/mx"
+            )
+        }
 
         btnClear.setOnClickListener {
             AlertDialog.Builder(this)
@@ -43,7 +66,9 @@ class CartActivity : AppCompatActivity() {
                     CartMemory.limpiar(this)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-                    Toast.makeText(this, "Lista vacía ✅", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this,
+                        "Lista vacía ✅",
+                        Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
@@ -60,7 +85,9 @@ class CartActivity : AppCompatActivity() {
                     CartMemory.agregarLista(this, lista)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-                    Toast.makeText(this, "Eliminado ✅", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this,
+                        "Eliminado ✅",
+                        Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
@@ -68,8 +95,13 @@ class CartActivity : AppCompatActivity() {
         }
     }
 
+    // ─── AGREGAR PRODUCTO ─────────────────────────────────────────────────────
     private fun mostrarDialogoAgregar() {
-        val input = EditText(this)
+        val input = EditText(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            setHintTextColor(android.graphics.Color.GRAY)
+            hint = "Ej: tomate, leche, huevos..."
+        }
         AlertDialog.Builder(this)
             .setTitle("➕ Agregar producto")
             .setView(input)
@@ -81,37 +113,74 @@ class CartActivity : AppCompatActivity() {
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
                 } else {
-                    Toast.makeText(this, "Escribe un producto", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this,
+                        "Escribe un producto",
+                        Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    // ─── TOTAL SIN PRECIO FALSO ───────────────────────────────────────────────
+    // ─── TOTAL ────────────────────────────────────────────────────────────────
     private fun actualizarTotal() {
         if (lista.isEmpty()) {
             txtTotal.text = "Lista vacía — agrega productos 🛒"
             return
         }
         val cantidad = lista.size
-        val texto = if (cantidad == 1) "1 producto en tu lista" else "$cantidad productos en tu lista"
-        txtTotal.text = "🛒 $texto"
+        val texto = if (cantidad == 1)
+            "🛒 1 producto en tu lista"
+        else
+            "🛒 $cantidad productos en tu lista"
+        txtTotal.text = texto
     }
 
+    // ─── WHATSAPP ─────────────────────────────────────────────────────────────
     private fun compartirWhatsApp() {
         if (lista.isEmpty()) {
-            Toast.makeText(this, "La lista está vacía", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this,
+                "La lista está vacía",
+                Toast.LENGTH_SHORT).show()
             return
         }
-        val numerados = lista.mapIndexed { i, item -> "${i + 1}. $item" }.joinToString("\n")
+        val numerados = lista
+            .mapIndexed { i, item -> "${i + 1}. $item" }
+            .joinToString("\n")
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(
                 Intent.EXTRA_TEXT,
-                "🛒 Mi Lista del Súper — Chef Vision IA\n\n$numerados\n\n💎 v.25 Certified by Altea-Garay"
+                "🛒 Mi Lista del Súper — Chef Vision IA\n\n" +
+                "$numerados\n\n" +
+                "💎 v.25 Certified by Altea-Garay"
             )
         }
         startActivity(Intent.createChooser(intent, "Enviar lista"))
+    }
+
+    // ─── DELIVERY ─────────────────────────────────────────────────────────────
+    private fun abrirDelivery(paquete: String, urlFallback: String) {
+        if (lista.isEmpty()) {
+            Toast.makeText(this,
+                "Agrega productos primero 🛒",
+                Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val intent = packageManager
+                .getLaunchIntentForPackage(paquete)
+            startActivity(
+                intent ?: Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(urlFallback)
+                )
+            )
+        } catch (e: Exception) {
+            startActivity(
+                Intent(Intent.ACTION_VIEW,
+                    Uri.parse(urlFallback))
+            )
+        }
     }
 }
