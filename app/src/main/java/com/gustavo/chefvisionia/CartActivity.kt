@@ -1,6 +1,7 @@
 package com.gustavo.chefvisionia
 
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.widget.*
@@ -39,22 +40,17 @@ class CartActivity : AppCompatActivity() {
         btnBack.setOnClickListener  { finish() }
 
         btnRappi.setOnClickListener {
-            abrirDelivery(
-                "com.grability.rappi",
-                "https://www.rappi.com.mx"
-            )
+            abrirDelivery("com.grability.rappi",
+                "https://www.rappi.com.mx")
         }
         btnUber.setOnClickListener {
-            abrirDelivery(
-                "com.ubercab.eats",
-                "https://www.ubereats.com/mx"
-            )
+            abrirDelivery("com.ubercab.eats",
+                "https://www.ubereats.com/mx")
         }
         btnDidi.setOnClickListener {
-            abrirDelivery(
-                "com.didiglobal.imhere",
-                "https://www.didifood.mx"
-            )
+            // FIX: URL correcta DiDi
+            abrirDelivery("com.didiglobal.imhere",
+                "https://food.didiglobal.com/mx")
         }
 
         btnClear.setOnClickListener {
@@ -66,8 +62,7 @@ class CartActivity : AppCompatActivity() {
                     CartMemory.limpiar(this)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-                    Toast.makeText(this,
-                        "Lista vacía ✅",
+                    Toast.makeText(this, "Lista vacía ✅",
                         Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
@@ -85,8 +80,7 @@ class CartActivity : AppCompatActivity() {
                     CartMemory.agregarLista(this, lista)
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
-                    Toast.makeText(this,
-                        "Eliminado ✅",
+                    Toast.makeText(this, "Eliminado ✅",
                         Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancelar", null)
@@ -95,12 +89,13 @@ class CartActivity : AppCompatActivity() {
         }
     }
 
-    // ─── AGREGAR PRODUCTO ─────────────────────────────────────────────────────
+    // FIX: texto negro visible en diálogo blanco
     private fun mostrarDialogoAgregar() {
         val input = EditText(this).apply {
-            setTextColor(android.graphics.Color.WHITE)
-            setHintTextColor(android.graphics.Color.GRAY)
+            setTextColor(Color.BLACK)
+            setHintTextColor(Color.GRAY)
             hint = "Ej: tomate, leche, huevos..."
+            setPadding(16, 8, 16, 8)
         }
         AlertDialog.Builder(this)
             .setTitle("➕ Agregar producto")
@@ -113,8 +108,7 @@ class CartActivity : AppCompatActivity() {
                     adapter.notifyDataSetChanged()
                     actualizarTotal()
                 } else {
-                    Toast.makeText(this,
-                        "Escribe un producto",
+                    Toast.makeText(this, "Escribe un producto",
                         Toast.LENGTH_SHORT).show()
                 }
             }
@@ -122,25 +116,21 @@ class CartActivity : AppCompatActivity() {
             .show()
     }
 
-    // ─── TOTAL ────────────────────────────────────────────────────────────────
     private fun actualizarTotal() {
         if (lista.isEmpty()) {
             txtTotal.text = "Lista vacía — agrega productos 🛒"
             return
         }
         val cantidad = lista.size
-        val texto = if (cantidad == 1)
+        txtTotal.text = if (cantidad == 1)
             "🛒 1 producto en tu lista"
         else
             "🛒 $cantidad productos en tu lista"
-        txtTotal.text = texto
     }
 
-    // ─── WHATSAPP ─────────────────────────────────────────────────────────────
     private fun compartirWhatsApp() {
         if (lista.isEmpty()) {
-            Toast.makeText(this,
-                "La lista está vacía",
+            Toast.makeText(this, "La lista está vacía",
                 Toast.LENGTH_SHORT).show()
             return
         }
@@ -149,38 +139,26 @@ class CartActivity : AppCompatActivity() {
             .joinToString("\n")
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(
-                Intent.EXTRA_TEXT,
+            putExtra(Intent.EXTRA_TEXT,
                 "🛒 Mi Lista del Súper — Chef Vision IA\n\n" +
                 "$numerados\n\n" +
-                "💎 v.25 Certified by Altea-Garay"
-            )
+                "💎 v.25 Certified by Altea-Garay")
         }
         startActivity(Intent.createChooser(intent, "Enviar lista"))
     }
 
-    // ─── DELIVERY ─────────────────────────────────────────────────────────────
     private fun abrirDelivery(paquete: String, urlFallback: String) {
         if (lista.isEmpty()) {
-            Toast.makeText(this,
-                "Agrega productos primero 🛒",
+            Toast.makeText(this, "Agrega productos primero 🛒",
                 Toast.LENGTH_SHORT).show()
             return
         }
         try {
-            val intent = packageManager
-                .getLaunchIntentForPackage(paquete)
-            startActivity(
-                intent ?: Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(urlFallback)
-                )
-            )
+            val intent = packageManager.getLaunchIntentForPackage(paquete)
+            startActivity(intent ?: Intent(Intent.ACTION_VIEW,
+                Uri.parse(urlFallback)))
         } catch (e: Exception) {
-            startActivity(
-                Intent(Intent.ACTION_VIEW,
-                    Uri.parse(urlFallback))
-            )
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urlFallback)))
         }
     }
 }
