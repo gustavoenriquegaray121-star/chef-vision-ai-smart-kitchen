@@ -57,7 +57,7 @@ jobs:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2"
         run: |
           ./gradlew assembleRelease --no-daemon \
-            -PGEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            "-PGEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
 
       - name: Generar Keystore
         run: |
