@@ -1,3 +1,4 @@
+build.gradle.kts:
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -17,10 +18,12 @@ android {
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"
 
-        // ─── GEMINI KEY — doble ruta para garantizar que entre al APK ───
+        // ─── GEMINI KEY — doble ruta + log para diagnóstico ───────────
         val geminiKey = System.getenv("GEMINI_API_KEY")
             ?: project.findProperty("GEMINI_API_KEY")?.toString()
             ?: ""
+
+        println(">>> GEMINI KEY longitud en build: ${geminiKey.length}")
 
         buildConfigField(
             "String",
@@ -67,10 +70,6 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
     implementation("com.google.android.gms:play-services-ads:23.0.0")
     implementation("com.google.code.gson:gson:2.10.1")
-    
-    // --- LÍNEA AGREGADA: Motor de visión para identificar ingredientes ---
-    implementation("com.google.ai.client.generativeai:generativeai:0.4.0")
-
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
