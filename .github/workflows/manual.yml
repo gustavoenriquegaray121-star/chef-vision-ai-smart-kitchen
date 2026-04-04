@@ -53,10 +53,11 @@ jobs:
       - name: Build Release APK
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # ESTO ES LO QUE ARREGLA EL ERROR DE MEMORIA:
           JAVA_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2"
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -PGEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       - name: Generar Keystore
         run: |
