@@ -229,7 +229,6 @@ class MainActivity : AppCompatActivity() {
                     getSharedPreferences("app_prefs", MODE_PRIVATE)
                         .edit().putInt("scan_count", 0).apply()
                     actualizarUIPlan()
-                    // ── Refrescar candados al cambiar plan ──
                     inicializarChipsCocinas()
                     if (userPlan != "GRATUITO" && userPlan != planAnterior) {
                         celebrarUpgrade(userPlan)
@@ -254,13 +253,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── CELEBRACIÓN UPGRADE ──────────────────────────────────────────────────
     private fun celebrarUpgrade(plan: String) {
         val esPremium = plan == "PREMIUM"
-        val titulo = if (esPremium)
-            "⭐ ¡Bienvenido a Premium!"
-        else
-            "👑 ¡Bienvenido a Embajador!"
+        val titulo = if (esPremium) "⭐ ¡Bienvenido a Premium!" else "👑 ¡Bienvenido a Embajador!"
         val mensaje = if (esPremium)
             "Ahora tienes 20 escaneos diarios y acceso a 9 cocinas en total.\n\n¡A cocinar!"
         else
@@ -280,7 +275,6 @@ class MainActivity : AppCompatActivity() {
         }, 400)
     }
 
-    // ─── VIBRACIÓN ────────────────────────────────────────────────────────────
     private fun vibrar(plan: String) {
         try {
             @Suppress("DEPRECATION")
@@ -307,7 +301,6 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) { }
     }
 
-    // ─── CONFETI ──────────────────────────────────────────────────────────────
     private fun lanzarConfeti(plan: String) {
         val colores = if (plan == "SUPER") {
             listOf(
@@ -394,8 +387,7 @@ class MainActivity : AppCompatActivity() {
         confettiView.invalidate()
     }
 
-    // ─── CHIPS DE COCINAS ─────────────────────────────────────────────────────
-    // FIX: ahora revisa el plan antes de mostrar candado
+    // ─── CHIPS — FIX: resetea TODOS los chips antes de marcar ─────────────────
     private fun inicializarChipsCocinas() {
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
@@ -441,17 +433,46 @@ class MainActivity : AppCompatActivity() {
         marcarChipSeleccionado(chipsMexicana)
     }
 
+    // FIX PRINCIPAL: resetea los 9 chips antes de marcar el seleccionado
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
-        listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina).forEach { id ->
+
+        // Reset chips gratuitos
+        listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina)
+            .forEach { id ->
+                findViewById<TextView>(id).apply {
+                    setBackgroundResource(R.drawable.glass_chip_free)
+                    setTextColor(Color.WHITE)
+                    alpha = 0.7f
+                }
+            }
+
+        // Reset chips premium
+        listOf(
+            R.id.chipFrancesa, R.id.chipJaponesa, R.id.chipEspanola,
+            R.id.chipAmericana, R.id.chipTailandesa, R.id.chipMediterranea
+        ).forEach { id ->
             findViewById<TextView>(id).apply {
-                setBackgroundResource(R.drawable.glass_chip_free)
-                setTextColor(Color.WHITE)
-                alpha = 0.7f
+                setBackgroundResource(R.drawable.glass_chip_premium)
+                setTextColor(Color.parseColor("#9999AA"))
+                alpha = 1f
             }
         }
+
+        // Reset chips embajador
+        listOf(R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje)
+            .forEach { id ->
+                findViewById<TextView>(id).apply {
+                    setBackgroundResource(R.drawable.chip_ambassador)
+                    setTextColor(Color.parseColor("#1A1A00"))
+                    alpha = 1f
+                }
+            }
+
+        // Marcar solo el elegido
         marcarChipSeleccionado(chip)
-        Toast.makeText(this, "✅ Cocina $cocina seleccionada", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "✅ Cocina $cocina seleccionada",
+            Toast.LENGTH_SHORT).show()
     }
 
     private fun marcarChipSeleccionado(chip: TextView) {
@@ -462,7 +483,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // FIX: textos corregidos con números correctos
     private fun mostrarUpgradeCocina(cocina: String, planRequerido: String) {
         val (titulo, precio, beneficios) = when (planRequerido) {
             "PREMIUM" -> Triple(
@@ -478,13 +498,13 @@ class MainActivity : AppCompatActivity() {
             .setTitle(titulo)
             .setMessage("Para $cocina necesitas el plan $planRequerido ($precio):\n\n$beneficios")
             .setPositiveButton("🚀 Quiero este plan") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "🚀 Próximamente disponible",
+                    Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Usar gratuita", null)
             .show()
     }
 
-    // ─── PLAN ─────────────────────────────────────────────────────────────────
     private fun actualizarUIPlan() {
         val limite = limiteDeEscaneos()
         val textoLimite = if (limite >= 99999) "∞" else limite.toString()
@@ -508,7 +528,6 @@ class MainActivity : AppCompatActivity() {
         } else false
     }
 
-    // ─── PERMISOS ─────────────────────────────────────────────────────────────
     private fun solicitarPermisoCamara() {
         when {
             checkSelfPermission(Manifest.permission.CAMERA) ==
@@ -530,7 +549,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── EVENTOS FAMILIARES ───────────────────────────────────────────────────
     private fun verificarEventoFamiliar() {
         val evento = EventMemoryManager.buscarEventoCercano(this) ?: return
         val mensaje = EventMemoryManager.obtenerMensajeEvento(evento)
@@ -541,7 +559,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── TIP POR HORA ─────────────────────────────────────────────────────────
     private fun mostrarTipPorHora() {
         val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         txtTip.text = when {
@@ -554,7 +571,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── SEMÁFORO ─────────────────────────────────────────────────────────────
     private fun evaluarYMostrarSemaforo() {
         val inventario = MemoryManager.obtener(this)
         if (inventario.isEmpty()) return
@@ -614,7 +630,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ─── CÁMARA ───────────────────────────────────────────────────────────────
     private fun abrirCamara() {
         try {
             val foto = File(
@@ -637,7 +652,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── PROCESAR IMAGEN ──────────────────────────────────────────────────────
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
@@ -699,7 +713,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── OPCIONES ─────────────────────────────────────────────────────────────
     private fun mostrarOpciones() {
         chipContainer.removeAllViews()
         chipContainer.addView(TextView(this).apply {
@@ -747,7 +760,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── RECETA ───────────────────────────────────────────────────────────────
     private fun manejarSeleccionReceta(receta: String) {
         val faltantes = SmartCartManager.detectarFaltantes(receta, ingredientesDetectados)
         if (faltantes.isNotEmpty()) {
@@ -776,7 +788,6 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // ─── ENTREGA ──────────────────────────────────────────────────────────────
     private fun mostrarOpcionesEntrega(faltantes: List<String>) {
         val query = faltantes.joinToString("+")
         AlertDialog.Builder(this)
@@ -791,9 +802,9 @@ class MainActivity : AppCompatActivity() {
                     "https://www.ubereats.com/mx/search?q=$query")
             }
             .setNegativeButton("📦 DiDi") { _, _ ->
-                // FIX: URL correcta de DiDi México
+                // FIX: URL correcta DiDi México
                 abrirApp("com.didiglobal.imhere",
-                    "https://www.didifood.mx")
+                    "https://food.didiglobal.com/mx")
             }
             .show()
     }
@@ -822,7 +833,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ─── UPGRADE ──────────────────────────────────────────────────────────────
     private fun mostrarUpgrade() {
         AlertDialog.Builder(this)
             .setTitle("🚀 Desbloquea Chef Vision")
