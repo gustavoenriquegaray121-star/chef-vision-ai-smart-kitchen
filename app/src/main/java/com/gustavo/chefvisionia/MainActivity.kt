@@ -432,7 +432,6 @@ class MainActivity : AppCompatActivity() {
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
 
-        // Reset chips gratuitos
         listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina)
             .forEach { id ->
                 findViewById<TextView>(id).apply {
@@ -442,7 +441,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-        // Reset chips premium
         listOf(
             R.id.chipFrancesa, R.id.chipJaponesa, R.id.chipEspanola,
             R.id.chipAmericana, R.id.chipTailandesa, R.id.chipMediterranea
@@ -454,7 +452,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Reset chips embajador
         listOf(R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje)
             .forEach { id ->
                 findViewById<TextView>(id).apply {
@@ -522,15 +519,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun solicitarPermisoCamara() {
         when {
-            checkSelfPermission(Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED -> abrirCamara()
+            checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> abrirCamara()
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 AlertDialog.Builder(this)
                     .setTitle("📸 Necesitamos tu cámara")
-                    .setMessage(
-                        "Chef Vision IA usa la cámara para identificar ingredientes " +
-                        "de tu refri y sugerirte recetas deliciosas."
-                    )
+                    .setMessage("Chef Vision IA usa la cámara para identificar ingredientes de tu refri y sugerirte recetas deliciosas.")
                     .setPositiveButton("Dar permiso") { _, _ ->
                         permissionLauncher.launch(Manifest.permission.CAMERA)
                     }
