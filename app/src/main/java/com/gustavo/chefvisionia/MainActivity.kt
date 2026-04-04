@@ -65,32 +65,32 @@ class MainActivity : AppCompatActivity() {
 
     private object FreshnessManager {
         val freshnessRules = mapOf(
-            "espinaca" to 3, "lechuga" to 4,
-            "tomate" to 5, "jitomate" to 5,
-            "aguacate" to 3, "plátano" to 4,
-            "fresa" to 3, "cilantro" to 4,
-            "pollo" to 2, "carne" to 2,
-            "pescado" to 1, "camarón" to 1,
-            "leche" to 3, "crema" to 5,
-            "zanahoria" to 7, "pepino" to 5,
-            "cebolla" to 10, "ajo" to 14,
-            "queso" to 7, "huevo" to 14,
-            "papa" to 10, "limón" to 10,
-            "naranja" to 7, "manzana" to 7,
-            "chile" to 7, "brócoli" to 5
+            "espinaca"  to 3,  "lechuga"   to 4,
+            "tomate"    to 5,  "jitomate"  to 5,
+            "aguacate"  to 3,  "plátano"   to 4,
+            "fresa"     to 3,  "cilantro"  to 4,
+            "pollo"     to 2,  "carne"     to 2,
+            "pescado"   to 1,  "camarón"   to 1,
+            "leche"     to 3,  "crema"     to 5,
+            "zanahoria" to 7,  "pepino"    to 5,
+            "cebolla"   to 10, "ajo"       to 14,
+            "queso"     to 7,  "huevo"     to 14,
+            "papa"      to 10, "limón"     to 10,
+            "naranja"   to 7,  "manzana"   to 7,
+            "chile"     to 7,  "brócoli"   to 5
         )
         val sugerencias = mapOf(
-            "espinaca" to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
-            "tomate" to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
-            "jitomate" to "¿Pico de gallo, pizza casera o salsa fresca? 🍅",
-            "aguacate" to "¿Guacamole, tostadas o tacos con aguacate? 🥑",
-            "plátano" to "¿Plátanos fritos, licuado o pan de plátano? 🍌",
-            "pollo" to "¿Pollo al ajillo, caldo tlalpeño o tacos? 🍗",
-            "carne" to "¿Bistec a la mexicana, arrachera o picadillo? 🥩",
-            "pescado" to "¡Úsalo hoy! ¿Veracruzana o tacos de pescado? 🐟",
-            "leche" to "¿Un licuado, arroz con leche o avena? 🥛",
-            "huevo" to "¿Unos huevos divorciados o un omelette? 🍳",
-            "cebolla" to "¿Sopa de cebolla o aros de cebolla crujientes? 🧅"
+            "espinaca"  to "¿Un licuado verde, quesadillas o pasta con espinaca? 🌿",
+            "tomate"    to "¿Unas entomatadas, salsa roja o sopa de tomate? 🍅",
+            "jitomate"  to "¿Pico de gallo, pizza casera o salsa fresca? 🍅",
+            "aguacate"  to "¿Guacamole, tostadas o tacos con aguacate? 🥑",
+            "plátano"   to "¿Plátanos fritos, licuado o pan de plátano? 🍌",
+            "pollo"     to "¿Pollo al ajillo, caldo tlalpeño o tacos? 🍗",
+            "carne"     to "¿Bistec a la mexicana, arrachera o picadillo? 🥩",
+            "pescado"   to "¡Úsalo hoy! ¿Veracruzana o tacos de pescado? 🐟",
+            "leche"     to "¿Un licuado, arroz con leche o avena? 🥛",
+            "huevo"     to "¿Unos huevos divorciados o un omelette? 🍳",
+            "cebolla"   to "¿Sopa de cebolla o aros de cebolla crujientes? 🧅"
         )
     }
 
@@ -233,7 +233,8 @@ class MainActivity : AppCompatActivity() {
                     if (userPlan != "GRATUITO" && userPlan != planAnterior) {
                         celebrarUpgrade(userPlan)
                     } else {
-                        Toast.makeText(this, "Plan: $userPlan 🚀", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Plan: $userPlan 🚀",
+                            Toast.LENGTH_SHORT).show()
                     }
                 }
                 .show()
@@ -241,7 +242,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnScan.setOnClickListener {
-            it.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+            it.performHapticFeedback(
+                android.view.HapticFeedbackConstants.VIRTUAL_KEY
+            )
             if (puedeEscanear()) solicitarPermisoCamara() else mostrarUpgrade()
         }
 
@@ -319,12 +322,12 @@ class MainActivity : AppCompatActivity() {
 
         repeat(cantidad) {
             particulas.add(Particula(
-                x = Random.nextFloat() * anchoPantalla,
-                y = -Random.nextFloat() * 200f,
+                x  = Random.nextFloat() * anchoPantalla,
+                y  = -Random.nextFloat() * 200f,
                 vx = Random.nextFloat() * 6f - 3f,
                 vy = Random.nextFloat() * 4f + 3f,
                 color = colores.random(),
-                size = Random.nextFloat() * 12f + 6f
+                size  = Random.nextFloat() * 12f + 6f
             ))
         }
 
@@ -384,6 +387,7 @@ class MainActivity : AppCompatActivity() {
         confettiView.invalidate()
     }
 
+    // ─── CHIPS — FIX: resetea TODOS los chips antes de marcar ─────────────────
     private fun inicializarChipsCocinas() {
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
@@ -429,9 +433,11 @@ class MainActivity : AppCompatActivity() {
         marcarChipSeleccionado(chipsMexicana)
     }
 
+    // FIX PRINCIPAL: resetea los 9 chips antes de marcar el seleccionado
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
 
+        // Reset chips gratuitos
         listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina)
             .forEach { id ->
                 findViewById<TextView>(id).apply {
@@ -441,6 +447,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+        // Reset chips premium
         listOf(
             R.id.chipFrancesa, R.id.chipJaponesa, R.id.chipEspanola,
             R.id.chipAmericana, R.id.chipTailandesa, R.id.chipMediterranea
@@ -452,6 +459,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Reset chips embajador
         listOf(R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje)
             .forEach { id ->
                 findViewById<TextView>(id).apply {
@@ -461,8 +469,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+        // Marcar solo el elegido
         marcarChipSeleccionado(chip)
-        Toast.makeText(this, "✅ Cocina $cocina seleccionada", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "✅ Cocina $cocina seleccionada",
+            Toast.LENGTH_SHORT).show()
     }
 
     private fun marcarChipSeleccionado(chip: TextView) {
@@ -488,7 +498,8 @@ class MainActivity : AppCompatActivity() {
             .setTitle(titulo)
             .setMessage("Para $cocina necesitas el plan $planRequerido ($precio):\n\n$beneficios")
             .setPositiveButton("🚀 Quiero este plan") { _, _ ->
-                Toast.makeText(this, "🚀 Próximamente disponible", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "🚀 Próximamente disponible",
+                    Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Usar gratuita", null)
             .show()
@@ -519,11 +530,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun solicitarPermisoCamara() {
         when {
-            checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> abrirCamara()
+            checkSelfPermission(Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED -> abrirCamara()
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 AlertDialog.Builder(this)
                     .setTitle("📸 Necesitamos tu cámara")
-                    .setMessage("Chef Vision IA usa la cámara para identificar ingredientes de tu refri y sugerirte recetas deliciosas.")
+                    .setMessage(
+                        "Chef Vision IA usa la cámara para identificar ingredientes " +
+                        "de tu refri y sugerirte recetas deliciosas."
+                    )
                     .setPositiveButton("Dar permiso") { _, _ ->
                         permissionLauncher.launch(Manifest.permission.CAMERA)
                     }
@@ -547,12 +562,12 @@ class MainActivity : AppCompatActivity() {
     private fun mostrarTipPorHora() {
         val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         txtTip.text = when {
-            hora < 6 -> "🌙 Madrugada — todo está tranquilo, ¿planeas el desayuno?"
+            hora < 6  -> "🌙 Madrugada — todo está tranquilo, ¿planeas el desayuno?"
             hora < 11 -> "🌅 Buenos días — ¿Qué hay en tu refri para el desayuno?"
             hora < 15 -> "☀️ Hora de la comida — escanea y te sugiero algo rico"
             hora < 19 -> "🌆 Tarde — ¿Ya pensaste qué vas a cenar?"
             hora < 22 -> "🌙 Noche — ideal para planear el desayuno de mañana"
-            else -> "🌙 Ya es tarde — descansa, mañana cocinamos algo especial"
+            else      -> "🌙 Ya es tarde — descansa, mañana cocinamos algo especial"
         }
     }
 
@@ -562,22 +577,24 @@ class MainActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE)
         val ahora = System.currentTimeMillis()
-        val rojos = mutableListOf<Pair<String, String>>()
+        val rojos     = mutableListOf<Pair<String, String>>()
         val amarillos = mutableListOf<String>()
-        val verdes = mutableListOf<String>()
+        val verdes    = mutableListOf<String>()
 
         inventario.forEach { ingrediente ->
             val key = ingrediente.lowercase().trim()
             val fechaCarga = prefs.getLong(key, 0L)
             if (fechaCarga == 0L) return@forEach
-            val diasPasados = TimeUnit.MILLISECONDS.toDays(ahora - fechaCarga).toInt()
+            val diasPasados = TimeUnit.MILLISECONDS
+                .toDays(ahora - fechaCarga).toInt()
             val limite = FreshnessManager.freshnessRules[key]
-                ?: FreshnessManager.freshnessRules.entries.find { key.contains(it.key) }?.value ?: 7
-
+                ?: FreshnessManager.freshnessRules.entries
+                    .find { key.contains(it.key) }?.value ?: 7
             when {
                 diasPasados >= limite -> {
                     val sug = FreshnessManager.sugerencias[key]
-                        ?: FreshnessManager.sugerencias.entries.find { (k, _) -> key.contains(k) }?.value
+                        ?: FreshnessManager.sugerencias.entries
+                            .find { (k, _) -> key.contains(k) }?.value
                         ?: "¡Cocina algo rico antes de que se pierda!"
                     rojos.add(Pair(ingrediente, sug))
                 }
@@ -649,7 +666,7 @@ class MainActivity : AppCompatActivity() {
                     append("Sugiere recetas específicas de cocina $cocinaSeleccionada. ")
                     EventMemoryManager.buscarEventoCercano(this@MainActivity)?.let {
                         append("Contexto familiar: cumpleaños de ${it.nombre} el ")
-                        append("\( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}.")
+                        append("${it.dia}/${it.mes}. Le gusta: ${it.gustos}.")
                     }
                 }
                 val ingredientes = GeminiEngine.detectarIngredientes(
@@ -785,8 +802,9 @@ class MainActivity : AppCompatActivity() {
                     "https://www.ubereats.com/mx/search?q=$query")
             }
             .setNegativeButton("📦 DiDi") { _, _ ->
+                // FIX: URL correcta DiDi México
                 abrirApp("com.didiglobal.imhere",
-                    "https://food.didiglobal.com/mx")
+                    "https://food.didifood.mx")
             }
             .show()
     }
@@ -803,10 +821,10 @@ class MainActivity : AppCompatActivity() {
     private fun mostrarTipTienda() {
         val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         val tip = when {
-            hora < 9 -> "🌅 Ve temprano — antes de las 9am hay menos gente en Soriana"
+            hora < 9  -> "🌅 Ve temprano — antes de las 9am hay menos gente en Soriana"
             hora < 12 -> "☀️ Martes y jueves: frutas y verduras 20-30% off en Soriana"
             hora < 19 -> "🌆 Chedraui tiene descuentos en lácteos después de las 5pm"
-            else -> "🌙 Algunos Soriana 24hrs tienen liquidaciones nocturnas"
+            else      -> "🌙 Algunos Soriana 24hrs tienen liquidaciones nocturnas"
         }
         AlertDialog.Builder(this)
             .setTitle("💡 Smart Tip de Ahorro")
@@ -852,3 +870,4 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Luego", null)
             .show()
     }
+}
