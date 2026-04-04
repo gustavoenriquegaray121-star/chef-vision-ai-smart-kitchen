@@ -14,12 +14,18 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner =
+            "androidx.test.runner.AndroidJUnitRunner"
+
+        // ─── GEMINI KEY — doble ruta para garantizar que entre al APK ───
+        val geminiKey = System.getenv("GEMINI_API_KEY")
+            ?: project.findProperty("GEMINI_API_KEY")?.toString()
+            ?: ""
 
         buildConfigField(
             "String",
             "GEMINI_API_KEY",
-            "\"${System.getenv("GEMINI_API_KEY") ?: ""}\""
+            "\"$geminiKey\""
         )
     }
 
