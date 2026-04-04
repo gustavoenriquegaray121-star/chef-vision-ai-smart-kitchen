@@ -31,8 +31,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Calendar
@@ -197,7 +195,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun inicializarDatos() {
-        // Se mantiene para compatibilidad si usas otras funciones de GeminiEngine
         GeminiEngine.apiKey = BuildConfig.GEMINI_API_KEY
         EventMemoryManager.initFamilia(this)
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -222,14 +219,9 @@ class MainActivity : AppCompatActivity() {
         scanCount = 0
         getSharedPreferences("app_prefs", MODE_PRIVATE)
             .edit().putInt("scan_count", 0).apply()
-
-        if (nuevoPlan == "GRATUITO") {
-            cocinaSeleccionada = "Mexicana"
-        }
-
+        if (nuevoPlan == "GRATUITO") cocinaSeleccionada = "Mexicana"
         actualizarUIPlan()
         inicializarChipsCocinas()
-
         if (nuevoPlan != "GRATUITO" && nuevoPlan != planAnterior) {
             celebrarUpgrade(nuevoPlan)
         } else {
@@ -356,7 +348,6 @@ class MainActivity : AppCompatActivity() {
                 super.onDraw(canvas)
                 frameCount++
                 var todasFuera = true
-
                 particulas.forEach { p ->
                     p.x += p.vx
                     p.y += p.vy
@@ -365,7 +356,6 @@ class MainActivity : AppCompatActivity() {
                     if (p.y > height * 0.6f) p.alpha -= 0.018f
                     if (p.alpha < 0f) p.alpha = 0f
                     if (p.y < height + 50f) todasFuera = false
-
                     paint.color = p.color
                     paint.alpha = (p.alpha * 255).toInt().coerceIn(0, 255)
                     canvas.save()
@@ -377,12 +367,8 @@ class MainActivity : AppCompatActivity() {
                     )
                     canvas.restore()
                 }
-
-                if (!todasFuera && frameCount < 180) {
-                    invalidate()
-                } else {
-                    (parent as? FrameLayout)?.removeView(this)
-                }
+                if (!todasFuera && frameCount < 180) invalidate()
+                else (parent as? FrameLayout)?.removeView(this)
             }
         }
 
@@ -400,7 +386,6 @@ class MainActivity : AppCompatActivity() {
                     rootLayout.animate().alpha(1f).setDuration(300).start()
                 }.start()
         }
-
         confettiView.invalidate()
     }
 
@@ -413,16 +398,14 @@ class MainActivity : AppCompatActivity() {
         chipsItaliana.setOnClickListener { seleccionarCocina("Italiana", chipsItaliana) }
         chipsChina.setOnClickListener    { seleccionarCocina("China", chipsChina) }
 
-        val chipsPremium = listOf(
+        listOf(
             R.id.chipFrancesa     to "Francesa",
             R.id.chipJaponesa     to "Japonesa",
             R.id.chipEspanola     to "Española",
             R.id.chipAmericana    to "Americana",
             R.id.chipTailandesa   to "Tailandesa",
             R.id.chipMediterranea to "Mediterránea"
-        )
-
-        chipsPremium.forEach { (id, nombre) ->
+        ).forEach { (id, nombre) ->
             val chip = findViewById<TextView>(id)
             if (userPlan == "PREMIUM" || userPlan == "SUPER") {
                 chip.text = nombre
@@ -439,13 +422,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val chipsEmbajador = listOf(
+        listOf(
             R.id.chipVegana   to "Vegana",
             R.id.chipFitness  to "Fitness",
             R.id.chipMaridaje to "Maridaje"
-        )
-
-        chipsEmbajador.forEach { (id, nombre) ->
+        ).forEach { (id, nombre) ->
             val chip = findViewById<TextView>(id)
             if (userPlan == "SUPER") {
                 chip.text = nombre
@@ -463,26 +444,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         val chipActual = when (cocinaSeleccionada) {
-            "Mexicana"    -> chipsMexicana
-            "Italiana"    -> chipsItaliana
-            "China"       -> chipsChina
-            "Francesa"    -> findViewById(R.id.chipFrancesa)
-            "Japonesa"    -> findViewById(R.id.chipJaponesa)
-            "Española"    -> findViewById(R.id.chipEspanola)
-            "Americana"   -> findViewById(R.id.chipAmericana)
-            "Tailandesa"  -> findViewById(R.id.chipTailandesa)
-            "Mediterránea"-> findViewById(R.id.chipMediterranea)
-            "Vegana"      -> findViewById(R.id.chipVegana)
-            "Fitness"     -> findViewById(R.id.chipFitness)
-            "Maridaje"    -> findViewById(R.id.chipMaridaje)
-            else          -> chipsMexicana
+            "Mexicana"     -> chipsMexicana
+            "Italiana"     -> chipsItaliana
+            "China"        -> chipsChina
+            "Francesa"     -> findViewById(R.id.chipFrancesa)
+            "Japonesa"     -> findViewById(R.id.chipJaponesa)
+            "Española"     -> findViewById(R.id.chipEspanola)
+            "Americana"    -> findViewById(R.id.chipAmericana)
+            "Tailandesa"   -> findViewById(R.id.chipTailandesa)
+            "Mediterránea" -> findViewById(R.id.chipMediterranea)
+            "Vegana"       -> findViewById(R.id.chipVegana)
+            "Fitness"      -> findViewById(R.id.chipFitness)
+            "Maridaje"     -> findViewById(R.id.chipMaridaje)
+            else           -> chipsMexicana
         }
         marcarChipSeleccionado(chipActual)
     }
 
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
-
         listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina).forEach { id ->
             findViewById<TextView>(id).apply {
                 setBackgroundResource(R.drawable.glass_chip_free)
@@ -490,7 +470,6 @@ class MainActivity : AppCompatActivity() {
                 alpha = 0.7f
             }
         }
-
         listOf(
             R.id.chipFrancesa, R.id.chipJaponesa, R.id.chipEspanola,
             R.id.chipAmericana, R.id.chipTailandesa, R.id.chipMediterranea
@@ -501,7 +480,6 @@ class MainActivity : AppCompatActivity() {
                 alpha = 1f
             }
         }
-
         listOf(R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje).forEach { id ->
             findViewById<TextView>(id).apply {
                 setBackgroundResource(R.drawable.chip_ambassador)
@@ -509,7 +487,6 @@ class MainActivity : AppCompatActivity() {
                 alpha = 1f
             }
         }
-
         marcarChipSeleccionado(chip)
         Toast.makeText(this, "✅ Cocina $cocina seleccionada",
             Toast.LENGTH_SHORT).show()
@@ -703,7 +680,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── FUNCIÓN CORREGIDA: MOTOR DE VISIÓN ACTIVADO ────────────────────────
+    // ─── PROCESAR IMAGEN — usa GeminiEngine por HTTP, sin SDK ────────────────
     private fun procesarImagen(bitmap: Bitmap) {
         txtTip.text = "🔍 Analizando con IA..."
         btnScan.isEnabled = false
@@ -712,59 +689,46 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // 1. Alta resolución para leer el empaque comercial
-                val bitmapResized = Bitmap.createScaledBitmap(bitmap, 1024, 1024, true)
-                
-                // 2. Configuración directa del modelo de visión
-                val generativeModel = GenerativeModel(
-                    modelName = "gemini-1.5-flash",
-                    apiKey = BuildConfig.GEMINI_API_KEY
-                )
-
-                val prompt = "Identify the food or commercial product in this image. " +
-                             "If it is a snack like 'Bimmuñuelos', list it. " +
-                             "Provide only a comma-separated list of ingredients or product names."
-
-                val inputContent = content {
-                    image(bitmapResized)
-                    text(prompt)
-                }
-
-                // 3. Ejecución de la IA
-                val response = generativeModel.generateContent(inputContent)
-                val textoRespuesta = response.text
-
-                if (!textoRespuesta.isNullOrBlank()) {
-                    val ingredientes = textoRespuesta.split(",")
-                        .map { it.trim().replace(Regex("[^A-Za-zñÑáéíóúÁÉÍÓÚ ]"), "") }
-                        .filter { it.length > 2 }
-
-                    if (ingredientes.isNotEmpty()) {
-                        ingredientesDetectados.clear()
-                        ingredientesDetectados.addAll(ingredientes)
-                        MemoryManager.guardar(this@MainActivity, ingredientes)
-                        
-                        val editor = getSharedPreferences("ChefInventory", Context.MODE_PRIVATE).edit()
-                        ingredientes.forEach { ingr ->
-                            editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
-                        }
-                        editor.apply()
-                        
-                        mostrarOpciones()
-                        evaluarYMostrarSemaforo()
-                    } else {
-                        throw Exception("No se extrajeron palabras clave")
+                val bitmapResized = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
+                val contextoFamiliar = buildString {
+                    append("Cocina seleccionada: $cocinaSeleccionada. ")
+                    append("Sugiere recetas específicas de cocina $cocinaSeleccionada. ")
+                    EventMemoryManager.buscarEventoCercano(this@MainActivity)?.let {
+                        append("Contexto familiar: cumpleaños de ${it.nombre} el ")
+                        append("${it.dia}/${it.mes}. Le gusta: ${it.gustos}.")
                     }
+                }
+                val ingredientes = GeminiEngine.detectarIngredientes(
+                    bitmapResized, contextoFamiliar
+                )
+                if (ingredientes.isNotEmpty()) {
+                    ingredientesDetectados.clear()
+                    ingredientesDetectados.addAll(ingredientes)
+                    MemoryManager.guardar(this@MainActivity, ingredientes)
+                    val editor = getSharedPreferences(
+                        "ChefInventory", Context.MODE_PRIVATE).edit()
+                    ingredientes.forEach { ingr ->
+                        editor.putLong(ingr.lowercase().trim(), System.currentTimeMillis())
+                    }
+                    editor.apply()
+                    mostrarOpciones()
+                    evaluarYMostrarSemaforo()
                 } else {
-                    throw Exception("Respuesta vacía del servidor")
+                    val apiVacia = BuildConfig.GEMINI_API_KEY.isEmpty()
+                    chipContainer.addView(TextView(this@MainActivity).apply {
+                        text = if (apiVacia)
+                            "❌ API Key vacía — recompila desde GitHub Actions."
+                        else
+                            "⚠️ IA no detectó ingredientes.\n\nIntenta:\n• Acercar más la cámara\n• Mejor iluminación\n• Apuntar directo a los alimentos"
+                        textSize = 13f
+                        setTextColor(Color.parseColor("#FF5722"))
+                        gravity = Gravity.CENTER
+                        setPadding(24, 32, 24, 32)
+                    })
                 }
             } catch (e: Exception) {
-                val apiVacia = BuildConfig.GEMINI_API_KEY.isEmpty()
                 chipContainer.addView(TextView(this@MainActivity).apply {
-                    text = if (apiVacia)
-                        "❌ API Key vacía — recompila desde GitHub Actions."
-                    else
-                        "⚠️ IA no detectó ingredientes.\n\nIntenta:\n• Mejorar la luz\n• Acercar el empaque\n• Limpiar el lente"
+                    text = "❌ Error: ${e.localizedMessage ?: "desconocido"}"
                     textSize = 13f
                     setTextColor(Color.parseColor("#FF5722"))
                     gravity = Gravity.CENTER
@@ -868,7 +832,7 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("📦 DiDi") { _, _ ->
                 abrirApp("com.didiglobal.imhere",
-                    "https://food.didifood.mx")
+                    "https://food.didiglobal.com/mx")
             }
             .show()
     }
@@ -880,6 +844,21 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(urlFallback)))
         }
+    }
+
+    private fun mostrarTipTienda() {
+        val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val tip = when {
+            hora < 9  -> "🌅 Ve temprano — antes de las 9am hay menos gente en Soriana"
+            hora < 12 -> "☀️ Martes y jueves: frutas y verduras 20-30% off en Soriana"
+            hora < 19 -> "🌆 Chedraui tiene descuentos en lácteos después de las 5pm"
+            else      -> "🌙 Algunos Soriana 24hrs tienen liquidaciones nocturnas"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("💡 Smart Tip de Ahorro")
+            .setMessage(tip)
+            .setPositiveButton("Entendido", null)
+            .show()
     }
 
     private fun mostrarUpgrade() {
