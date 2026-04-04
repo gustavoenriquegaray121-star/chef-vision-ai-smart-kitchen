@@ -53,7 +53,7 @@ class CartActivity : AppCompatActivity() {
         btnDidi.setOnClickListener {
             abrirDelivery(
                 "com.didiglobal.imhere",
-                "https://www.didifood.com/mx"
+                "https://www.didifood.mx"
             )
         }
 
