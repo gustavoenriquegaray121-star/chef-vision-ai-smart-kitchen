@@ -67,6 +67,10 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
     implementation("com.google.android.gms:play-services-ads:23.0.0")
     implementation("com.google.code.gson:gson:2.10.1")
+    
+    // ESTA ES LA LÍNEA CRÍTICA QUE HACÍA FALTA PARA QUE LA IA "VEA"
+    implementation("com.google.ai.client.generativeai:generativeai:0.4.0")
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
