@@ -68,7 +68,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-ads:23.0.0")
     implementation("com.google.code.gson:gson:2.10.1")
     
-    // ESTA ES LA LÍNEA CRÍTICA QUE HACÍA FALTA PARA QUE LA IA "VEA"
+    // --- LÍNEA AGREGADA: Motor de visión para identificar ingredientes ---
     implementation("com.google.ai.client.generativeai:generativeai:0.4.0")
 
     testImplementation("junit:junit:4.13.2")
