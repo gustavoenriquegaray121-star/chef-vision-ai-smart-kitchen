@@ -852,4 +852,3 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Luego", null)
             .show()
     }
-}
