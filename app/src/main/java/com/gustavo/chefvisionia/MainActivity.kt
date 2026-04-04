@@ -213,29 +213,42 @@ class MainActivity : AppCompatActivity() {
         btnScan.startAnimation(pulse)
     }
 
+    // ─── CAMBIAR PLAN — función central sin duplicación ───────────────────────
+    private fun cambiarPlanYActualizar(nuevoPlan: String) {
+        val planAnterior = userPlan
+        userPlan = nuevoPlan
+        scanCount = 0
+        getSharedPreferences("app_prefs", MODE_PRIVATE)
+            .edit().putInt("scan_count", 0).apply()
+
+        // Si baja a gratuito, resetear cocina a Mexicana
+        if (nuevoPlan == "GRATUITO") {
+            cocinaSeleccionada = "Mexicana"
+        }
+
+        actualizarUIPlan()
+        inicializarChipsCocinas()
+
+        if (nuevoPlan != "GRATUITO" && nuevoPlan != planAnterior) {
+            celebrarUpgrade(nuevoPlan)
+        } else {
+            Toast.makeText(this, "Plan: $nuevoPlan 🚀",
+                Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun inicializarListeners() {
         txtPlan.setOnLongClickListener {
             val opciones = arrayOf("🆓 GRATUITO", "⭐ PREMIUM", "👑 EMBAJADOR")
             AlertDialog.Builder(this)
                 .setTitle("🛠️ Modo Dev — Cambiar plan")
                 .setItems(opciones) { _, which ->
-                    val planAnterior = userPlan
-                    userPlan = when (which) {
+                    val nuevoPlan = when (which) {
                         1 -> "PREMIUM"
                         2 -> "SUPER"
                         else -> "GRATUITO"
                     }
-                    scanCount = 0
-                    getSharedPreferences("app_prefs", MODE_PRIVATE)
-                        .edit().putInt("scan_count", 0).apply()
-                    actualizarUIPlan()
-                    inicializarChipsCocinas()
-                    if (userPlan != "GRATUITO" && userPlan != planAnterior) {
-                        celebrarUpgrade(userPlan)
-                    } else {
-                        Toast.makeText(this, "Plan: $userPlan 🚀",
-                            Toast.LENGTH_SHORT).show()
-                    }
+                    cambiarPlanYActualizar(nuevoPlan)
                 }
                 .show()
             true
@@ -255,7 +268,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun celebrarUpgrade(plan: String) {
         val esPremium = plan == "PREMIUM"
-        val titulo = if (esPremium) "⭐ ¡Bienvenido a Premium!" else "👑 ¡Bienvenido a Embajador!"
+        val titulo = if (esPremium)
+            "⭐ ¡Bienvenido a Premium!"
+        else
+            "👑 ¡Bienvenido a Embajador!"
         val mensaje = if (esPremium)
             "Ahora tienes 20 escaneos diarios y acceso a 9 cocinas en total.\n\n¡A cocinar!"
         else
@@ -387,97 +403,148 @@ class MainActivity : AppCompatActivity() {
         confettiView.invalidate()
     }
 
-    // ─── CHIPS — FIX: resetea TODOS los chips antes de marcar ─────────────────
+    // ─── CHIPS ────────────────────────────────────────────────────────────────
+    // Lógica visual según plan:
+    // GRATUITO  → 3 chips activos, 6 premium con 🔒, 3 embajador con 🔒
+    // PREMIUM   → 9 chips activos sin 🔒, 3 embajador con 🔒
+    // SUPER     → todos los 12 chips activos sin 🔒
     private fun inicializarChipsCocinas() {
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
         val chipsChina    = findViewById<TextView>(R.id.chipChina)
 
+        // Gratuitas — siempre activas
         chipsMexicana.setOnClickListener { seleccionarCocina("Mexicana", chipsMexicana) }
         chipsItaliana.setOnClickListener { seleccionarCocina("Italiana", chipsItaliana) }
         chipsChina.setOnClickListener    { seleccionarCocina("China", chipsChina) }
 
-        listOf(
+        // Premium — activas si plan >= PREMIUM
+        val chipsPremium = listOf(
             R.id.chipFrancesa     to "Francesa",
             R.id.chipJaponesa     to "Japonesa",
             R.id.chipEspanola     to "Española",
             R.id.chipAmericana    to "Americana",
             R.id.chipTailandesa   to "Tailandesa",
             R.id.chipMediterranea to "Mediterránea"
-        ).forEach { (id, nombre) ->
+        )
+
+        chipsPremium.forEach { (id, nombre) ->
             val chip = findViewById<TextView>(id)
-            chip.setOnClickListener {
-                if (userPlan == "PREMIUM" || userPlan == "SUPER") {
-                    seleccionarCocina(nombre, chip)
-                } else {
-                    mostrarUpgradeCocina(nombre, "PREMIUM")
-                }
+            if (userPlan == "PREMIUM" || userPlan == "SUPER") {
+                // Sin candado
+                chip.text = nombre
+                chip.setBackgroundResource(R.drawable.glass_chip_premium)
+                chip.setTextColor(Color.parseColor("#CCCCCC"))
+                chip.alpha = 1f
+                chip.setOnClickListener { seleccionarCocina(nombre, chip) }
+            } else {
+                // Con candado
+                chip.text = "$nombre 🔒"
+                chip.setBackgroundResource(R.drawable.glass_chip_premium)
+                chip.setTextColor(Color.parseColor("#9999AA"))
+                chip.alpha = 1f
+                chip.setOnClickListener { mostrarUpgradeCocina(nombre, "PREMIUM") }
             }
         }
 
-        listOf(
+        // Embajador — activas solo si plan == SUPER
+        val chipsEmbajador = listOf(
             R.id.chipVegana   to "Vegana",
             R.id.chipFitness  to "Fitness",
             R.id.chipMaridaje to "Maridaje"
-        ).forEach { (id, nombre) ->
+        )
+
+        chipsEmbajador.forEach { (id, nombre) ->
             val chip = findViewById<TextView>(id)
-            chip.setOnClickListener {
-                if (userPlan == "SUPER") {
-                    seleccionarCocina(nombre, chip)
-                } else {
-                    mostrarUpgradeCocina(nombre, "EMBAJADOR")
-                }
+            if (userPlan == "SUPER") {
+                // Sin candado
+                chip.text = nombre
+                chip.setBackgroundResource(R.drawable.chip_ambassador)
+                chip.setTextColor(Color.parseColor("#1A1A00"))
+                chip.alpha = 1f
+                chip.setOnClickListener { seleccionarCocina(nombre, chip) }
+            } else {
+                // Con candado
+                chip.text = "$nombre 🔒"
+                chip.setBackgroundResource(R.drawable.chip_ambassador)
+                chip.setTextColor(Color.parseColor("#1A1A00"))
+                chip.alpha = 1f
+                chip.setOnClickListener { mostrarUpgradeCocina(nombre, "EMBAJADOR") }
             }
         }
 
-        marcarChipSeleccionado(chipsMexicana)
+        // Marcar cocina actualmente seleccionada
+        val chipActual = when (cocinaSeleccionada) {
+            "Mexicana"    -> chipsMexicana
+            "Italiana"    -> chipsItaliana
+            "China"       -> chipsChina
+            "Francesa"    -> findViewById(R.id.chipFrancesa)
+            "Japonesa"    -> findViewById(R.id.chipJaponesa)
+            "Española"    -> findViewById(R.id.chipEspanola)
+            "Americana"   -> findViewById(R.id.chipAmericana)
+            "Tailandesa"  -> findViewById(R.id.chipTailandesa)
+            "Mediterránea"-> findViewById(R.id.chipMediterranea)
+            "Vegana"      -> findViewById(R.id.chipVegana)
+            "Fitness"     -> findViewById(R.id.chipFitness)
+            "Maridaje"    -> findViewById(R.id.chipMaridaje)
+            else          -> chipsMexicana
+        }
+        marcarChipSeleccionado(chipActual)
     }
 
-    // FIX PRINCIPAL: resetea los 9 chips antes de marcar el seleccionado
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
 
-        // Reset chips gratuitos
-        listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina)
-            .forEach { id ->
-                findViewById<TextView>(id).apply {
-                    setBackgroundResource(R.drawable.glass_chip_free)
-                    setTextColor(Color.WHITE)
-                    alpha = 0.7f
-                }
+        // Reset gratuitos
+        listOf(R.id.chipMexicana, R.id.chipItaliana, R.id.chipChina).forEach { id ->
+            findViewById<TextView>(id).apply {
+                setBackgroundResource(R.drawable.glass_chip_free)
+                setTextColor(Color.WHITE)
+                alpha = 0.7f
             }
+        }
 
-        // Reset chips premium
+        // Reset premium
         listOf(
             R.id.chipFrancesa, R.id.chipJaponesa, R.id.chipEspanola,
             R.id.chipAmericana, R.id.chipTailandesa, R.id.chipMediterranea
         ).forEach { id ->
             findViewById<TextView>(id).apply {
                 setBackgroundResource(R.drawable.glass_chip_premium)
-                setTextColor(Color.parseColor("#9999AA"))
+                setTextColor(Color.parseColor("#CCCCCC"))
                 alpha = 1f
             }
         }
 
-        // Reset chips embajador
-        listOf(R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje)
-            .forEach { id ->
-                findViewById<TextView>(id).apply {
-                    setBackgroundResource(R.drawable.chip_ambassador)
-                    setTextColor(Color.parseColor("#1A1A00"))
-                    alpha = 1f
-                }
+        // Reset embajador
+        listOf(R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje).forEach { id ->
+            findViewById<TextView>(id).apply {
+                setBackgroundResource(R.drawable.chip_ambassador)
+                setTextColor(Color.parseColor("#1A1A00"))
+                alpha = 1f
             }
+        }
 
-        // Marcar solo el elegido
         marcarChipSeleccionado(chip)
         Toast.makeText(this, "✅ Cocina $cocina seleccionada",
             Toast.LENGTH_SHORT).show()
     }
 
+    // Drawable diferente según el tipo de chip seleccionado
     private fun marcarChipSeleccionado(chip: TextView) {
+        val idChip = chip.id
+        val drawable = when {
+            idChip in listOf(
+                R.id.chipVegana, R.id.chipFitness, R.id.chipMaridaje
+            ) -> R.drawable.chip_ambassador
+            idChip in listOf(
+                R.id.chipFrancesa, R.id.chipJaponesa, R.id.chipEspanola,
+                R.id.chipAmericana, R.id.chipTailandesa, R.id.chipMediterranea
+            ) -> R.drawable.chip_premium_selected
+            else -> R.drawable.chip_free_selected
+        }
         chip.apply {
-            setBackgroundResource(R.drawable.chip_free_selected)
+            setBackgroundResource(drawable)
             setTextColor(Color.WHITE)
             alpha = 1f
         }
@@ -487,11 +554,11 @@ class MainActivity : AppCompatActivity() {
         val (titulo, precio, beneficios) = when (planRequerido) {
             "PREMIUM" -> Triple(
                 "⭐ $cocina — Plan Premium", "\$699/año",
-                "• 20 escaneos diarios\n• +6 cocinas internacionales (9 en total)\n• Sin anuncios"
+                "• 20 escaneos diarios\n• +6 cocinas sin candado (9 en total)\n• Sin anuncios"
             )
             else -> Triple(
                 "👑 $cocina — Plan Embajador", "\$899/año",
-                "• Escaneos ILIMITADOS\n• Todas las cocinas (9 + exclusivas)\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
+                "• Escaneos ILIMITADOS\n• Todas las cocinas sin candado\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
             )
         }
         AlertDialog.Builder(this)
@@ -802,7 +869,6 @@ class MainActivity : AppCompatActivity() {
                     "https://www.ubereats.com/mx/search?q=$query")
             }
             .setNegativeButton("📦 DiDi") { _, _ ->
-                // FIX: URL correcta DiDi México
                 abrirApp("com.didiglobal.imhere",
                     "https://food.didifood.mx")
             }
@@ -840,32 +906,20 @@ class MainActivity : AppCompatActivity() {
                 "Has agotado tus escaneos gratuitos de hoy.\n\n" +
                 "⭐ PREMIUM \$699/año:\n" +
                 "• 20 escaneos diarios\n" +
-                "• +6 cocinas internacionales (9 en total)\n" +
+                "• +6 cocinas sin candado (9 en total)\n" +
                 "• Sin anuncios\n\n" +
                 "👑 PLAN EMBAJADOR \$899/año:\n" +
                 "• Escaneos ILIMITADOS\n" +
-                "• Todas las cocinas\n" +
+                "• Todas las cocinas sin candado\n" +
                 "• Memoria familiar 💖\n" +
                 "• Recordatorios de cumpleaños\n" +
                 "• Fitness, Vegano y Maridaje"
             )
             .setPositiveButton("👑 Plan Embajador") { _, _ ->
-                userPlan = "SUPER"
-                scanCount = 0
-                getSharedPreferences("app_prefs", MODE_PRIVATE)
-                    .edit().putInt("scan_count", 0).apply()
-                actualizarUIPlan()
-                inicializarChipsCocinas()
-                celebrarUpgrade("SUPER")
+                cambiarPlanYActualizar("SUPER")
             }
             .setNeutralButton("⭐ Premium") { _, _ ->
-                userPlan = "PREMIUM"
-                scanCount = 0
-                getSharedPreferences("app_prefs", MODE_PRIVATE)
-                    .edit().putInt("scan_count", 0).apply()
-                actualizarUIPlan()
-                inicializarChipsCocinas()
-                celebrarUpgrade("PREMIUM")
+                cambiarPlanYActualizar("PREMIUM")
             }
             .setNegativeButton("Luego", null)
             .show()
