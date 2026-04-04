@@ -39,7 +39,6 @@ import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
-    // ─── PARTÍCULA — a nivel de clase, no dentro de función ───────────────────
     private data class Particula(
         var x: Float, var y: Float,
         var vx: Float, var vy: Float,
@@ -49,14 +48,12 @@ class MainActivity : AppCompatActivity() {
         val velocidadRot: Float = Random.nextFloat() * 8f - 4f
     )
 
-    // ─── ESTADO ───────────────────────────────────────────────────────────────
     private var scanCount = 0
     private var userPlan = "GRATUITO"
     private var cocinaSeleccionada = "Mexicana"
     private val ingredientesDetectados = mutableListOf<String>()
     private var fotoUri: Uri? = null
 
-    // ─── VISTAS ───────────────────────────────────────────────────────────────
     private lateinit var chipContainer: LinearLayout
     private lateinit var txtPlan: TextView
     private lateinit var txtTip: TextView
@@ -66,7 +63,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var rootLayout: View
 
-    // ─── SEMÁFORO DE FRESCURA ─────────────────────────────────────────────────
     private object FreshnessManager {
         val freshnessRules = mapOf(
             "espinaca"  to 3,  "lechuga"   to 4,
@@ -98,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // ─── PERMISO CÁMARA ───────────────────────────────────────────────────────
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -156,7 +151,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── CICLO DE VIDA ────────────────────────────────────────────────────────
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -180,7 +174,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    // ─── INICIALIZACIÓN ───────────────────────────────────────────────────────
     private fun inicializarVistas() {
         chipContainer = findViewById(R.id.chipContainer)
         txtPlan       = findViewById(R.id.txtPlan)
@@ -236,6 +229,8 @@ class MainActivity : AppCompatActivity() {
                     getSharedPreferences("app_prefs", MODE_PRIVATE)
                         .edit().putInt("scan_count", 0).apply()
                     actualizarUIPlan()
+                    // ── Refrescar candados al cambiar plan ──
+                    inicializarChipsCocinas()
                     if (userPlan != "GRATUITO" && userPlan != planAnterior) {
                         celebrarUpgrade(userPlan)
                     } else {
@@ -262,11 +257,14 @@ class MainActivity : AppCompatActivity() {
     // ─── CELEBRACIÓN UPGRADE ──────────────────────────────────────────────────
     private fun celebrarUpgrade(plan: String) {
         val esPremium = plan == "PREMIUM"
-        val titulo = if (esPremium) "⭐ ¡Bienvenido a Premium!" else "👑 ¡Bienvenido a Embajador!"
-        val mensaje = if (esPremium)
-            "Ahora tienes 20 escaneos diarios y acceso a 6 cocinas internacionales.\n\n¡A cocinar!"
+        val titulo = if (esPremium)
+            "⭐ ¡Bienvenido a Premium!"
         else
-            "Has desbloqueado la experiencia completa de Chef Vision IA.\n\nMemoria familiar, cocinas exclusivas y escaneos ilimitados. 💖"
+            "👑 ¡Bienvenido a Embajador!"
+        val mensaje = if (esPremium)
+            "Ahora tienes 20 escaneos diarios y acceso a 9 cocinas en total.\n\n¡A cocinar!"
+        else
+            "Has desbloqueado la experiencia completa de Chef Vision IA.\n\nTodas las cocinas, memoria familiar y escaneos ilimitados. 💖"
 
         AlertDialog.Builder(this)
             .setTitle(titulo)
@@ -397,6 +395,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ─── CHIPS DE COCINAS ─────────────────────────────────────────────────────
+    // FIX: ahora revisa el plan antes de mostrar candado
     private fun inicializarChipsCocinas() {
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
@@ -407,25 +406,35 @@ class MainActivity : AppCompatActivity() {
         chipsChina.setOnClickListener    { seleccionarCocina("China", chipsChina) }
 
         listOf(
-            R.id.chipFrancesa     to "Francesa 🇫🇷",
-            R.id.chipJaponesa     to "Japonesa 🇯🇵",
-            R.id.chipEspanola     to "Española 🇪🇸",
-            R.id.chipAmericana    to "Americana 🇺🇸",
-            R.id.chipTailandesa   to "Tailandesa 🇹🇭",
-            R.id.chipMediterranea to "Mediterránea 🫒"
+            R.id.chipFrancesa     to "Francesa",
+            R.id.chipJaponesa     to "Japonesa",
+            R.id.chipEspanola     to "Española",
+            R.id.chipAmericana    to "Americana",
+            R.id.chipTailandesa   to "Tailandesa",
+            R.id.chipMediterranea to "Mediterránea"
         ).forEach { (id, nombre) ->
-            findViewById<TextView>(id).setOnClickListener {
-                mostrarUpgradeCocina(nombre, "PREMIUM")
+            val chip = findViewById<TextView>(id)
+            chip.setOnClickListener {
+                if (userPlan == "PREMIUM" || userPlan == "SUPER") {
+                    seleccionarCocina(nombre, chip)
+                } else {
+                    mostrarUpgradeCocina(nombre, "PREMIUM")
+                }
             }
         }
 
         listOf(
-            R.id.chipVegana   to "Vegana 🥗",
-            R.id.chipFitness  to "Fitness 💪",
-            R.id.chipMaridaje to "Maridaje 🍷"
+            R.id.chipVegana   to "Vegana",
+            R.id.chipFitness  to "Fitness",
+            R.id.chipMaridaje to "Maridaje"
         ).forEach { (id, nombre) ->
-            findViewById<TextView>(id).setOnClickListener {
-                mostrarUpgradeCocina(nombre, "EMBAJADOR")
+            val chip = findViewById<TextView>(id)
+            chip.setOnClickListener {
+                if (userPlan == "SUPER") {
+                    seleccionarCocina(nombre, chip)
+                } else {
+                    mostrarUpgradeCocina(nombre, "EMBAJADOR")
+                }
             }
         }
 
@@ -453,15 +462,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // FIX: textos corregidos con números correctos
     private fun mostrarUpgradeCocina(cocina: String, planRequerido: String) {
         val (titulo, precio, beneficios) = when (planRequerido) {
             "PREMIUM" -> Triple(
                 "⭐ $cocina — Plan Premium", "\$699/año",
-                "• 20 escaneos diarios\n• 6 cocinas internacionales\n• Sin anuncios"
+                "• 20 escaneos diarios\n• +6 cocinas internacionales (9 en total)\n• Sin anuncios"
             )
             else -> Triple(
                 "👑 $cocina — Plan Embajador", "\$899/año",
-                "• Escaneos ILIMITADOS\n• Todas las cocinas\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
+                "• Escaneos ILIMITADOS\n• Todas las cocinas (9 + exclusivas)\n• Memoria familiar 💖\n• Fitness, Vegano y Maridaje"
             )
         }
         AlertDialog.Builder(this)
@@ -781,8 +791,9 @@ class MainActivity : AppCompatActivity() {
                     "https://www.ubereats.com/mx/search?q=$query")
             }
             .setNegativeButton("📦 DiDi") { _, _ ->
+                // FIX: URL correcta de DiDi México
                 abrirApp("com.didiglobal.imhere",
-                    "https://www.didifood.com/mx/search?keyword=$query")
+                    "https://www.didifood.mx")
             }
             .show()
     }
@@ -819,14 +830,14 @@ class MainActivity : AppCompatActivity() {
                 "Has agotado tus escaneos gratuitos de hoy.\n\n" +
                 "⭐ PREMIUM \$699/año:\n" +
                 "• 20 escaneos diarios\n" +
-                "• 6 cocinas internacionales\n" +
+                "• +6 cocinas internacionales (9 en total)\n" +
                 "• Sin anuncios\n\n" +
                 "👑 PLAN EMBAJADOR \$899/año:\n" +
                 "• Escaneos ILIMITADOS\n" +
+                "• Todas las cocinas\n" +
                 "• Memoria familiar 💖\n" +
                 "• Recordatorios de cumpleaños\n" +
-                "• Fitness, Vegano y Maridaje\n" +
-                "• Integración Rappi / Uber Eats"
+                "• Fitness, Vegano y Maridaje"
             )
             .setPositiveButton("👑 Plan Embajador") { _, _ ->
                 userPlan = "SUPER"
@@ -834,6 +845,7 @@ class MainActivity : AppCompatActivity() {
                 getSharedPreferences("app_prefs", MODE_PRIVATE)
                     .edit().putInt("scan_count", 0).apply()
                 actualizarUIPlan()
+                inicializarChipsCocinas()
                 celebrarUpgrade("SUPER")
             }
             .setNeutralButton("⭐ Premium") { _, _ ->
@@ -842,9 +854,10 @@ class MainActivity : AppCompatActivity() {
                 getSharedPreferences("app_prefs", MODE_PRIVATE)
                     .edit().putInt("scan_count", 0).apply()
                 actualizarUIPlan()
+                inicializarChipsCocinas()
                 celebrarUpgrade("PREMIUM")
             }
             .setNegativeButton("Luego", null)
             .show()
-            }
     }
+}
