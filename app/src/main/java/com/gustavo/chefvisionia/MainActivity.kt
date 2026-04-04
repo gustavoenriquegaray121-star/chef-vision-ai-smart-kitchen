@@ -387,7 +387,6 @@ class MainActivity : AppCompatActivity() {
         confettiView.invalidate()
     }
 
-    // ─── CHIPS — FIX: resetea TODOS los chips antes de marcar ─────────────────
     private fun inicializarChipsCocinas() {
         val chipsMexicana = findViewById<TextView>(R.id.chipMexicana)
         val chipsItaliana = findViewById<TextView>(R.id.chipItaliana)
@@ -433,7 +432,6 @@ class MainActivity : AppCompatActivity() {
         marcarChipSeleccionado(chipsMexicana)
     }
 
-    // FIX PRINCIPAL: resetea los 9 chips antes de marcar el seleccionado
     private fun seleccionarCocina(cocina: String, chip: TextView) {
         cocinaSeleccionada = cocina
 
@@ -666,7 +664,7 @@ class MainActivity : AppCompatActivity() {
                     append("Sugiere recetas específicas de cocina $cocinaSeleccionada. ")
                     EventMemoryManager.buscarEventoCercano(this@MainActivity)?.let {
                         append("Contexto familiar: cumpleaños de ${it.nombre} el ")
-                        append("${it.dia}/${it.mes}. Le gusta: ${it.gustos}.")
+                        append("\( {it.dia}/ \){it.mes}. Le gusta: ${it.gustos}.")
                     }
                 }
                 val ingredientes = GeminiEngine.detectarIngredientes(
@@ -802,7 +800,6 @@ class MainActivity : AppCompatActivity() {
                     "https://www.ubereats.com/mx/search?q=$query")
             }
             .setNegativeButton("📦 DiDi") { _, _ ->
-                // FIX: URL correcta DiDi México
                 abrirApp("com.didiglobal.imhere",
                     "https://food.didiglobal.com/mx")
             }
