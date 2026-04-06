@@ -18,8 +18,8 @@ object GeminiEngine {
     private const val TAG = "GEMINI_DEBUG"
 
     private val modelos = listOf(
-        "gemini-2.0-flash-lite",
         "gemini-2.0-flash",
+        "gemini-1.5-flash",
         "gemini-1.5-flash-latest"
     )
 
@@ -61,6 +61,8 @@ object GeminiEngine {
                     Si ves un empaque de tocino FUD, responde: tocino
                     Si ves una crema Alpura, responde: crema
                     Si ves huevos, responde: huevo
+                    Si ves tacos, responde: tortilla, carne, cebolla, cilantro
+                    Si ves pan dulce Bimbo, responde: pan dulce, azúcar
                     
                     Responde ÚNICAMENTE con los ingredientes separados por comas,
                     en español y en minúsculas, sin explicaciones.
