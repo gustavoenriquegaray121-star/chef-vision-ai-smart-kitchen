@@ -17,16 +17,20 @@ object GeminiEngine {
     var apiKey: String = ""
     private const val TAG = "GEMINI_DEBUG"
 
+    // ─── Modelos actualizados según lista real de la API ──────────────────────
     private val modelos = listOf(
+        "gemini-2.5-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest"
+        "gemini-2.0-flash-lite"
     )
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
-        return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+        // Calidad 60% para reducir tamaño y evitar timeout
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
+        val bytes = outputStream.toByteArray()
+        Log.d(TAG, "Bitmap bytes: ${bytes.size} — base64 chars aprox: ${bytes.size * 4 / 3}")
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     suspend fun detectarIngredientes(
@@ -38,47 +42,50 @@ object GeminiEngine {
                 Log.d(TAG, "=== INICIO DETECCIÓN ===")
                 Log.d(TAG, "API Key vacía: ${apiKey.isEmpty()}")
                 Log.d(TAG, "API Key longitud: ${apiKey.length}")
-                Log.d(TAG, "Contexto: $contextoFamiliar")
+                Log.d(TAG, "Bitmap size: ${bitmap.width}x${bitmap.height}")
 
-                val base64Image = bitmapToBase64(bitmap)
-                Log.d(TAG, "Imagen convertida OK — tamaño: ${base64Image.length} chars")
+                // ─── Reducir resolución para evitar timeout ────────────────
+                val bitmapFinal = if (bitmap.width > 384 || bitmap.height > 384) {
+                    Bitmap.createScaledBitmap(bitmap, 384, 384, true)
+                } else bitmap
+
+                val base64Image = bitmapToBase64(bitmapFinal)
+                Log.d(TAG, "Imagen convertida OK — base64 length: ${base64Image.length}")
 
                 val contextoExtra = if (contextoFamiliar.isNotEmpty())
                     "\n\nContexto especial: $contextoFamiliar"
                 else ""
 
                 val prompt = """
-                    Eres Chef Vision IA, el asistente culinario más inteligente del mundo.
-                    Analiza esta imagen con máxima atención.
+                    Eres Chef Vision IA. Analiza esta imagen.
                     
-                    Puedes ver:
+                    Identifica TODO lo comestible que veas:
                     - Ingredientes sueltos (verduras, frutas, carnes, lácteos)
-                    - Empaques o productos de supermercado (tocino, jamón, queso, etc.)
+                    - Empaques de supermercado (tocino, jamón, queso, papas, galletas)
                     - Comida preparada o platillos
-                    - Refri o despensa con varios productos
+                    - Bebidas o jugos
                     
-                    Tu tarea: identificar TODO lo que sea comestible o ingrediente.
-                    Si ves un empaque de tocino FUD, responde: tocino
-                    Si ves una crema Alpura, responde: crema
-                    Si ves huevos, responde: huevo
-                    Si ves tacos, responde: tortilla, carne, cebolla, cilantro
-                    Si ves pan dulce Bimbo, responde: pan dulce, azúcar
+                    Ejemplos:
+                    - Empaque Sabritas = papas fritas
+                    - Empaque Oreo = galletas
+                    - Del Valle durazno = jugo de durazno
+                    - Bubulubu = chocolate
+                    - Tacos = tortilla, carne, cebolla, cilantro
+                    - Bimbuñuelos = pan dulce
                     
-                    Responde ÚNICAMENTE con los ingredientes separados por comas,
-                    en español y en minúsculas, sin explicaciones.
-                    Ejemplo: tocino, crema, huevo
+                    Responde SOLO con los ingredientes separados por comas en español.
+                    NO expliques nada. Solo la lista.
+                    Ejemplo: papas fritas, galletas, jugo de durazno
                     
-                    Solo si la imagen no tiene absolutamente nada relacionado
-                    con comida, responde: NINGUNO$contextoExtra
+                    Si NO hay absolutamente nada comestible responde: NINGUNO$contextoExtra
                 """.trimIndent()
 
                 val respuesta = llamarGeminiConFallback(base64Image, prompt)
-
                 Log.d(TAG, "Respuesta raw: $respuesta")
 
                 if (respuesta.startsWith("❌") ||
                     respuesta.contains("NINGUNO", ignoreCase = true)) {
-                    Log.d(TAG, "Respuesta vacía o NINGUNO — lista vacía")
+                    Log.d(TAG, "Sin ingredientes detectados")
                     return@withContext emptyList()
                 }
 
@@ -106,18 +113,17 @@ object GeminiEngine {
         return withContext(Dispatchers.IO) {
             try {
                 val contextoExtra = if (contextoFamiliar.isNotEmpty())
-                    "\n\n💖 Contexto especial: $contextoFamiliar. " +
-                    "Si es relevante, adapta la receta o agrega un toque especial."
+                    "\n\n💖 Contexto especial: $contextoFamiliar."
                 else ""
 
                 val prompt = """
-                    Eres Chef Vision IA, el mejor chef del mundo y amigo de la familia.
+                    Eres Chef Vision IA, el mejor chef y amigo de la familia.
                     
                     El usuario quiere preparar: $nombreReceta
                     Ingredientes disponibles: ${ingredientesDisponibles.joinToString(", ")}
                     $contextoExtra
                     
-                    Responde en $idioma con este formato exacto:
+                    Responde en $idioma con este formato:
                     
                     🍽️ RECETA: $nombreReceta
                     ⏱️ Tiempo: (minutos)
@@ -150,15 +156,10 @@ object GeminiEngine {
         return withContext(Dispatchers.IO) {
             try {
                 val prompt = """
-                    Eres un chef profesional y práctico.
-                    El usuario NO tiene: $ingredienteFaltante
-                    Lo que SÍ tiene: ${ingredientesDisponibles.joinToString(", ")}
-                    
-                    En máximo 2 líneas dile:
-                    1. Qué puede usar como sustituto
-                    2. Qué tan bien quedará el plato (% de sabor)
-                    
-                    Sé amigable y directo.
+                    Chef profesional y práctico.
+                    NO tiene: $ingredienteFaltante
+                    SÍ tiene: ${ingredientesDisponibles.joinToString(", ")}
+                    En máximo 2 líneas: sustituto y % de sabor resultante.
                 """.trimIndent()
 
                 llamarGeminiConFallback(null, prompt)
@@ -176,17 +177,14 @@ object GeminiEngine {
         return withContext(Dispatchers.IO) {
             try {
                 val prompt = """
-                    El usuario tiene $ingrediente que lleva $diasEnRefri días en el refrigerador.
-                    En máximo 2 líneas dile:
-                    1. Si debe usarlo hoy o cuántos días más aguanta
-                    2. La mejor receta express para no desperdiciarlo
-                    Sé directo y amigable. Usa un emoji relevante.
+                    $ingrediente lleva $diasEnRefri días en el refri.
+                    En 2 líneas: ¿cuántos días más aguanta? y mejor receta express.
                 """.trimIndent()
 
                 llamarGeminiConFallback(null, prompt)
 
             } catch (e: Exception) {
-                "Revisa el estado de tu $ingrediente — mejor úsalo pronto. 🕐"
+                "Revisa tu $ingrediente — mejor úsalo pronto. 🕐"
             }
         }
     }
@@ -199,14 +197,15 @@ object GeminiEngine {
         for (modelo in modelos) {
             Log.d(TAG, "Intentando modelo: $modelo")
             val resultado = llamarGemini(base64Image, prompt, modelo)
-            Log.d(TAG, "Resultado [$modelo]: ${resultado.take(200)}")
+            Log.d(TAG, "Resultado [$modelo]: ${resultado.take(300)}")
             if (!resultado.startsWith("❌")) {
                 Log.d(TAG, "✅ Modelo exitoso: $modelo")
                 return resultado
             }
             ultimoError = resultado
+            Log.e(TAG, "❌ Modelo falló [$modelo]: $ultimoError")
         }
-        Log.e(TAG, "❌ Todos los modelos fallaron. Último error: $ultimoError")
+        Log.e(TAG, "❌ TODOS LOS MODELOS FALLARON. Último: $ultimoError")
         return ultimoError
     }
 
@@ -238,26 +237,31 @@ object GeminiEngine {
                     }
                 ))
                 put("generationConfig", JSONObject().apply {
-                    put("temperature", 0.7)
-                    put("maxOutputTokens", 1024)
+                    put("temperature", 0.4)
+                    put("maxOutputTokens", 256)
                 })
             }
 
             val urlStr = "https://generativelanguage.googleapis.com/v1beta/models/" +
                 "$modelo:generateContent?key=$apiKey"
 
-            Log.d(TAG, "URL modelo: $modelo")
+            Log.d(TAG, "Llamando: $urlStr")
 
             val url = URL(urlStr)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Accept", "application/json")
             connection.doOutput = true
-            connection.connectTimeout = 30000
-            connection.readTimeout = 30000
+            // ─── Timeouts aumentados ──────────────────────────────────────
+            connection.connectTimeout = 60000
+            connection.readTimeout = 60000
 
-            OutputStreamWriter(connection.outputStream).use { writer ->
-                writer.write(requestBody.toString())
+            val bodyStr = requestBody.toString()
+            Log.d(TAG, "Request body size: ${bodyStr.length} chars")
+
+            OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
+                writer.write(bodyStr)
                 writer.flush()
             }
 
@@ -266,18 +270,26 @@ object GeminiEngine {
 
             if (responseCode != 200) {
                 val errorBody = connection.errorStream
-                    ?.bufferedReader()?.use { it.readText() } ?: "Sin detalle"
+                    ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                    ?: "Sin detalle de error"
                 Log.e(TAG, "Error HTTP [$modelo] $responseCode: $errorBody")
-                return "❌ Error $responseCode [$modelo]: $errorBody"
+                return "❌ Error $responseCode: $errorBody"
             }
 
             val responseText = connection.inputStream
-                .bufferedReader().use { it.readText() }
+                .bufferedReader(Charsets.UTF_8).use { it.readText() }
 
-            Log.d(TAG, "Response OK [$modelo] — longitud: ${responseText.length}")
+            Log.d(TAG, "Response OK [$modelo] length: ${responseText.length}")
 
-            JSONObject(responseText)
-                .getJSONArray("candidates")
+            val json = JSONObject(responseText)
+            val candidates = json.getJSONArray("candidates")
+
+            if (candidates.length() == 0) {
+                Log.e(TAG, "Sin candidatos en respuesta")
+                return "❌ Sin candidatos"
+            }
+
+            val text = candidates
                 .getJSONObject(0)
                 .getJSONObject("content")
                 .getJSONArray("parts")
@@ -285,9 +297,12 @@ object GeminiEngine {
                 .getString("text")
                 .trim()
 
+            Log.d(TAG, "Texto extraído: $text")
+            text
+
         } catch (e: Exception) {
             Log.e(TAG, "EXCEPCIÓN HTTP [$modelo]: ${e.message}", e)
-            "❌ Error [$modelo]: ${e.message}"
+            "❌ Excepción: ${e.message}"
         }
     }
 }
